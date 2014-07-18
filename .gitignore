@@ -1,0 +1,5 @@
+*.gdml
+*.stp
+interactive.py
+*.sh
+step-gdml
