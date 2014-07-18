@@ -2,7 +2,7 @@
 
 from __future__ import division, print_function, absolute_import
 
-import sys,os
+import sys,os,time
 if len(sys.argv) != 3:
     print("Usage: step-gdml path/to/FreeCAD/lib filename.stp")
     quit()
@@ -18,8 +18,9 @@ class block():
         self.text = text
     def __enter__(self):
         print("\n\n      ENTER {}\n\n".format(self.text))
+        self.time = time.time()
     def __exit__(self, x,y,z):
-        print("\n\n      LEAVE {}\n\n".format(self.text))
+        print("\n\n      LEAVE {}; t={}\n\n".format(self.text,time.time()-self.time))
 
 
 with block("READ"):
@@ -31,7 +32,11 @@ def boxjoin(a, b):
         max(a.XMax, b.XMax),max(a.YMax, b.YMax),max(a.ZMax, b.ZMax))
 
 
-precision = 1 # float in (0, 1]
+# Precision is a float in (0,1]
+# 1 is fast, 10^-8 will OOM you.
+# Does NOT improve triangle quality
+precision = 1
+
 unit = "mm" # FreeCAD internal length. We don't care about mass/time
 superbox = FreeCAD.BoundBox(0,0,0,0,0,0)
 with block("UNPACK"):
@@ -44,12 +49,9 @@ with block("UNPACK"):
         material = "ALUMINUM" # by default
         things.append((verts, tris, material))
 
-        # units by default are mm. how to find?
-
         bbox = obj.Shape.BoundBox
         superbox = boxjoin(superbox, bbox)
 
-        # obj.Shape.BoundBox yields the bounding box of the object...
         # obj.Shape.Placement gives loc, Yaw-pitch-roll.
         # should be zero, if not must counter it :-{
 
@@ -60,26 +62,30 @@ worldbox = boxgrow(superbox, 5) # 5 mm grow for safety
 
 import xml.etree.cElementTree as ET
 
-def make_defines(things):
+# python still hogs memory when exporting.
+# need to find a really lightweight method
+
+def make_defines(things,wbbox):
     defines = ET.Element("define")
     for shapeno,thing in enumerate(things):
         for pno, position in enumerate(thing[0]):
             px = ET.SubElement(defines, "position")
             px.attrib = {
                 "name":"{}-{}".format(shapeno, pno),
-                "unit":unit,# make an option
+                "unit":unit,
                 "x":str(position.x),
                 "y":str(position.y),
                 "z":str(position.z),
             }
 
     px = ET.SubElement(defines, "position")
+    center = wbbox.Center
     px.attrib = {
             "name":"center",
-            "unit":unit,# make an option
-            "x":str(0),
-            "y":str(0),
-            "z":str(0),
+            "unit":unit,
+            "x":str(-center.x),
+            "y":str(-center.y),
+            "z":str(-center.z),
         }
 
     return defines
@@ -173,21 +179,21 @@ header = """<?xml version="1.0" encoding="UTF-8" standalone="no" ?><gdml xmlns:x
 footer = """<setup name="Default" version="1.0"><world ref="World"/></setup></gdml>"""
 
 
-# NOTE: top volume must be world, must contain all other volumes
+with block("GENERATE"):
+    content = [make_defines(things,worldbox), make_materials(), make_solids(things,worldbox), make_structure(things)]
 
-# dump prints, does not return
-
-content = [make_defines(things), make_materials(), make_solids(things,worldbox), make_structure(things)]
-
-output = "".join([header]+[ET.tostring(x) for x in content]+[footer])
+    output = "".join([header]+[ET.tostring(x) for x in content]+[footer])
 
 def write(output):
+    # should really write it properly in the first place
+    # feels like an O(N^2) algorithm
+
     import xml.dom.minidom,re
     # SO 749796!
     uglyXml = xml.dom.minidom.parseString(output).toprettyxml(indent='  ')
     text_re = re.compile('>\n\s+([^<>\s].*?)\n\s+</', re.DOTALL)
     prettyXml = text_re.sub('>\g<1></', uglyXml)
-    print(prettyXml)
     open("output.gdml", "w").write(prettyXml)
 
-write(output)
+with block("WRITE"):
+    write(output)
