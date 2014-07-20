@@ -9,7 +9,7 @@ from OCC.Utils.Topology import Topo
 from OCC.MSH.Mesh import QuickTriangleMesh
 
 from box import *
-from export import export_to_gdml
+from fast_export import export_to_gdml
 
 display = None
 shapes = []
@@ -35,13 +35,11 @@ def load_file(evt=None):
     display.ResetView()
 
 def export_file(evt=None):
-    print(shapes)
-    print(id(display.GetSelectedShape()))
-
     things = []
     bbox = ((0,0),(0,0),(0,0))
     for idx, shape in enumerate(shapes):
-        # note: fails on unusual meshes
+        # note: fails on unusual meshes.
+        # note: need to set precision appropriately
         qtm = QuickTriangleMesh()
         qtm.set_shape(shape)
         qtm.compute()
