@@ -71,10 +71,12 @@ def write_structures(X, things):
 
     X('  </structure>')
 
-def write_extro(X):
+def write_setup(X):
     X('  <setup name="Default" version="1.0">')
     X('    <world ref="World"/>')
     X('  </setup>')
+
+def write_extro(X):
     X('</gdml>')
 
 def export_to_gdml(filename, things, boundbox):
@@ -91,10 +93,12 @@ def export_to_gdml(filename, things, boundbox):
         X = lambda line: f.write(line + "\n")
 
         write_intro(X)
-        write_definitions(X, things, center)
         write_materials(X)
+        write_definitions(X, things, center)
         write_solids(X, things, size)
         write_structures(X, things)
+        write_setup(X)
+
         write_extro(X)
     print("Writing took: {: 3.4f} seconds".format(time() -t))
 

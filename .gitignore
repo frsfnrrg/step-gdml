@@ -4,3 +4,4 @@ interactive.py
 *.sh
 step-gdml
 *.pyc
+*.xz
