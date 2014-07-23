@@ -2,14 +2,9 @@
 
 from __future__ import print_function, division, absolute_import
 
-import sys
-import OCC.Display.SimpleGui as Gui
-from OCC.Utils.DataExchange.STEP import STEPImporter
-from OCC.Utils.Topology import Topo
-from OCC.MSH.Mesh import QuickTriangleMesh
+from PyQt4 import QtCore, QtGui
 
-from box import *
-from fast_export import export_to_gdml
+import sys,os,argparse
 
 display = None
 shapes = []
@@ -20,21 +15,42 @@ def group3(li):
         o.append(tuple(li[x:x+3]))
     return o
 
-def load_file(evt=None):
+def import_file(filename):
+    print("Importing modules...")
+
+    from OCC.Utils.DataExchange.STEP import STEPImporter
+    from OCC.Utils.Topology import Topo
+
+    print("Importing complete. Loading now...")
+
     global shapes
-    name = "test.stp"
-    importer = STEPImporter(name)
+    importer = STEPImporter(filename)
     importer.read_file()
     lumps = importer.get_shapes()
     shapes = [s for lump in lumps for s in Topo(lump).solids()]
 
-    print("Loading complete. Rendering now.")
+    print("Loading complete.")
+
+def load_file(filename):
+    import_file(filename)
+    print("Rendering now...")
 
     display.EraseAll()
     display.DisplayShape(shapes)
     display.ResetView()
 
-def export_file(evt=None):
+    print("Rendering complete.")
+
+def export_file(filename):
+    # TODO: eventually, reduce Mesh to core components, since QTM is O(n**2)
+    print("Importing modules...")
+
+    from OCC.MSH.Mesh import QuickTriangleMesh
+    from box import boxjoin, boundboxv
+    from fast_export import export_to_gdml
+
+    print("Import complete. Meshing now...")
+
     things = []
     bbox = ((0,0),(0,0),(0,0))
     for idx, shape in enumerate(shapes):
@@ -47,9 +63,11 @@ def export_file(evt=None):
         things.append([vtx, group3(qtm.get_faces()), str(idx), "ALUMINUM"])
         bbox = boxjoin(boundboxv(vtx), bbox)
 
-    print("Meshing complete. Generating now.")
+    print("Meshing complete. Generating now...")
 
-    export_to_gdml("output.gdml", things, bbox)
+    export_to_gdml(filename, things, bbox)
+
+    print("Generating complete.")
 
 def named(func, name):
     """ Mutates function name && returns it """
@@ -58,28 +76,148 @@ def named(func, name):
     k.__name__ = name
     return k
 
+class MainWindow(QtGui.QMainWindow):
+    def __init__(self):
+        apply(QtGui.QMainWindow.__init__, (self,))
+        self.setWindowTitle("Step to GDML Converter")
 
-def create_window(args):
+        # delayed import
+        from OCC.Display.qtDisplay import qtViewer3d
+        self.viewer = qtViewer3d(self)
+        # set background image?
+
+        self.resize(1024, 768)
+
+        self.create_menus()
+
+        slayout = QtGui.QVBoxLayout()
+        slayout.addWidget(QtGui.QLabel("WOO"))
+        slayout.addWidget(QtGui.QLabel("YEAH"))
+
+        layout = QtGui.QHBoxLayout()
+        layout.addLayout(slayout, 0)
+        layout.addSpacing(12)
+        layout.addWidget(self.viewer, 3)
+
+        mainwidget = QtGui.QWidget()
+        mainwidget.setLayout(layout)
+        self.setCentralWidget(mainwidget)
+
+        self.load_dialog = None
+        self.export_dialog = None
+
+    def quit(self,evt=None):
+        self.setVisible(False)
+        sys.exit(0)
+
+    def load_file_dialog(self, evt=None):
+        def on_accept(evt=None):
+            filenames = self.load_dialog.selectedFiles()
+            if len(filenames) != 1:
+                print("Odd file choice")
+                return
+            name = str(filenames[0])
+            load_file(name)
+
+        # make a global dialog registry:
+        # call load_file_dialog("Name", *params, lambda file: ..)
+        if self.load_dialog:
+            ld.raise_()
+        else:
+            ld = QtGui.QFileDialog(self, "Load STEP File",
+                                   QtCore.QDir.home().path(),
+                                   "STEP file (*.stp *.step)")
+
+            ld.setModal(True)
+
+            self.connect(ld, QtCore.SIGNAL("accepted()"), on_accept)
+            ld.show()
+            self.load_dialog = ld
+
+    def export_file_dialog(self, evt=None):
+        def on_accept(evt=None):
+            filenames = self.export_dialog.selectedFiles()
+            if len(filenames) != 1:
+                print("Odd file choice")
+                return
+            name = str(filenames[0])
+            export_file(name)
+
+        # make a global dialog registry:
+        # call load_file_dialog("Name", *params, lambda file: ..)
+        # but we only have two dialogs!
+        if self.export_dialog:
+            ld.raise_()
+        else:
+            ld = QtGui.QFileDialog(self, "Export GDML File",
+                                   QtCore.QDir.home().path(),
+                                   "GDML file (*.gdml)")
+
+            ld.setAcceptMode(QtGui.QFileDialog.AcceptSave)
+            ld.setModal(True)
+
+            self.connect(ld, QtCore.SIGNAL("accepted()"), on_accept)
+            ld.show()
+            self.export_dialog = ld
+
+    def create_menus(self):
+        self.menu_bar = self.menuBar()
+        menu = self.menu_bar.addMenu("&File")
+
+        # add some declarative helpers
+        # menu = [["File", ["Name", "Ctrl-C", looga]]...]
+
+        def make_action(desc, shortcut, func):
+            action = QtGui.QAction(desc, self)
+            action.setShortcut(shortcut)
+            self.connect(action, QtCore.SIGNAL("triggered()"), func)
+            return action
+
+        menu.addAction(make_action("Open STEP File...","Ctrl+O",self.load_file_dialog))
+        menu.addAction(make_action("Export to GDML...","Ctrl+E",self.export_file_dialog))
+        qaction = make_action("Quit!","Ctrl+Q",self.quit)
+        qaction.setMenuRole(QtGui.QAction.QuitRole)
+        menu.addAction(qaction)
+
+        menu = self.menu_bar.addMenu("&Help")
+        action = QtGui.QAction("Sorry! :-(", self)
+        action.setDisabled(True)
+        menu.addAction(action)
+
+    def get_display(self):
+        return self.viewer._display
+
+def create_window(filename):
+    # evaluate arguments!!
+
+    def get_bg_filename():
+        pack = sys.modules["OCC"]
+        return os.path.join(pack.__path__[0], "Display", "default_background.bmp")
+
     global display
+    app = QtGui.QApplication([])
+    window = MainWindow()
+    window.show()
+    window.viewer.InitDriver()
 
-    Gui.set_backend("qt")
-    display, start_display, add_menu, add_function_to_menu = \
-        Gui.init_display()
+    display = window.get_display()
+    display.SetBackgroundImage(get_bg_filename())
 
-    add_menu("File")
-    add_function_to_menu("File", named(load_file, "Load File"))
-    add_function_to_menu("File", named(export_file, "Export File"))
-    add_function_to_menu("File", named(quit, "Quit"))
+    # maybe put it in a callback
+    if filename:
+        load_file(filename)
 
-    print(dir(display))
-
-    display.SetSelectionModeShape()
-
-    start_display()
+    app.exec_()
 
 if __name__ == '__main__':
-    # NOTE: we actually should embed OCCViewer in a window reference
-    # (use PyQt window). Then we can create a multiframe window.
-    # But EXPORT FIRST
+    import argparse
+    parser = argparse.ArgumentParser(description='Convert STEP files to GDML!')
+    parser.add_argument('inputfile', nargs='?', metavar="STEP-INPUT", help='input filename',)
+    parser.add_argument('outputfile', nargs='?', metavar="GDML-OUTPUT", help="don't show display & output to file")
+    args = parser.parse_args()
 
-    create_window(sys.argv)
+    if args.outputfile and args.inputfile:
+        import_file(args.inputfile)
+        export_file(args.outputfile)
+    else:
+        create_window(args.inputfile)
