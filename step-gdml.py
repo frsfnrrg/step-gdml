@@ -13,7 +13,6 @@ filename = sys.argv[2]
 import os,time
 import FreeCAD
 import Part
-from box import *
 from fast_export import export_to_gdml
 import resource
 
@@ -41,34 +40,22 @@ print_memusage()
 # Does NOT improve triangle quality
 precision = 1
 
-unit = "mm" # FreeCAD internal length. We don't care about mass/time
-bounds = ((0,0),(0,0),(0,0))
-with block("UNPACK"):
-    doc = FreeCAD.getDocument("Unnamed")
+doc = FreeCAD.getDocument("Unnamed")
+
+def unpack(doc):
     objs = doc.findObjects()
 
     things = []
     for idx, obj in enumerate(objs):
         verts, tris = obj.Shape.tessellate(precision)
-        # NOTE: make verts/tris numpy arrays
-        # for much lower memory usage
 
-        things.append(([(v.x,v.y,v.z) for v in verts], tris, str(idx), "ALUMINUM"))
-        b = obj.Shape.BoundBox
-        bbox = ((b.XMin, b.XMax),
-                (b.YMin, b.YMax),
-                (b.ZMin, b.ZMax))
+        print_memusage()
 
-        bounds = boxjoin(bounds, bbox)
-        doc.removeObject(obj.Name) # no longer needed
-
-        #print_memusage()
-
-FreeCAD.closeDocument("Unnamed")
+        yield ([(v.x,v.y,v.z) for v in verts], tris, str(idx), "ALUMINUM")
 
 # clean out FreeCAD
 
 with block("EXPORT"):
-    export_to_gdml("output.gdml", things, bounds)
+    export_to_gdml("output.gdml", unpack(doc))
 
 print_memusage()

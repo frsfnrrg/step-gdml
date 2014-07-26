@@ -5,3 +5,7 @@ interactive.py
 step-gdml
 *.pyc
 *.xz
+Makefile*
+*.pro.user
+build
+callgrind*

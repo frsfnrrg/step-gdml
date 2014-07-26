@@ -9,26 +9,25 @@ import sys,os,argparse
 display = None
 shapes = []
 
-def group3(li):
-    o = []
-    for x in range(0, len(li), 3):
-        o.append(tuple(li[x:x+3]))
-    return o
+import resource
+
+def print_memusage(last_usage=[0]):
+    usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000.0
+    delta = usage - last_usage[0]
+    print("MEMORY: {} DELTA {}".format(usage, delta))
+    last_usage[0] = usage
+
 
 def import_file(filename):
     print("Importing modules...")
-
     from OCC.Utils.DataExchange.STEP import STEPImporter
     from OCC.Utils.Topology import Topo
-
     print("Importing complete. Loading now...")
-
     global shapes
     importer = STEPImporter(filename)
     importer.read_file()
     lumps = importer.get_shapes()
     shapes = [s for lump in lumps for s in Topo(lump).solids()]
-
     print("Loading complete.")
 
 def load_file(filename):
@@ -45,27 +44,20 @@ def export_file(filename):
     # TODO: eventually, reduce Mesh to core components, since QTM is O(n**2)
     print("Importing modules...")
 
-    from OCC.MSH.Mesh import QuickTriangleMesh
-    from box import boxjoin, boundboxv
+    from conv_shape import conv_shape
+
     from fast_export import export_to_gdml
 
-    print("Import complete. Meshing now...")
+    print("Import complete. Streaming now...")
 
-    things = []
-    bbox = ((0,0),(0,0),(0,0))
-    for idx, shape in enumerate(shapes):
-        # note: fails on unusual meshes.
-        # note: need to set precision appropriately
-        qtm = QuickTriangleMesh()
-        qtm.set_shape(shape)
-        qtm.compute()
-        vtx = qtm.get_vertices()
-        things.append([vtx, group3(qtm.get_faces()), str(idx), "ALUMINUM"])
-        bbox = boxjoin(boundboxv(vtx), bbox)
+    def gen():
+        for idx, shape in enumerate(shapes):
+            vtx, fcs = conv_shape(shape)
+            print_memusage()
+            print("Ready item {}...".format(idx))
+            yield (vtx,fcs, str(idx),"ALUMINUM")
 
-    print("Meshing complete. Generating now...")
-
-    export_to_gdml(filename, things, bbox)
+    export_to_gdml(filename, gen())
 
     print("Generating complete.")
 
