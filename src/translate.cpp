@@ -130,6 +130,25 @@ bool Translator::findAllShapes(const Handle(AIS_InteractiveContext)& ctxt, const
     return !shapes->IsEmpty();
 }
 
+QList<AIS_InteractiveObject*> Translator::getInteractiveObjects(const Handle(AIS_InteractiveContext)& ctxt) {
+    QList<AIS_InteractiveObject*> qll;
+    AIS_ListOfInteractive objs;
+    ctxt->EraseAll(false);
+    ctxt->ErasedObjects(objs);
+    ctxt->DisplayAll(false);
+    while (!objs.IsEmpty()) {
+        Handle(AIS_InteractiveObject) obj = objs.First();
+        if ( obj->IsKind( STANDARD_TYPE( AIS_Shape ) ) )
+        {
+            qll.append(&(*obj));
+        } else {
+            printf("ERROR\n");
+        }
+        objs.RemoveFirst();
+    }
+    return qll;
+}
+
 bool Translator::importSTEP(QString path) {
     Handle(TopTools_HSequenceOfShape) shapes = new TopTools_HSequenceOfShape();
     if (!importSTEP(path, shapes)) {

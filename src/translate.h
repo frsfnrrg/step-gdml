@@ -38,6 +38,7 @@ public:
     bool exportGDML(QString);
     static bool displayShapes(const Handle(AIS_InteractiveContext)&, const Handle(TopTools_HSequenceOfShape) &);
     static bool findAllShapes(const Handle(AIS_InteractiveContext)&, const Handle(TopTools_HSequenceOfShape) &);
+    static QList<AIS_InteractiveObject*> getInteractiveObjects(const Handle(AIS_InteractiveContext)&);
 private:
 
     GdmlWriter* gdmlWriter;

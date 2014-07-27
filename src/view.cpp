@@ -70,7 +70,6 @@ View::View( Handle(AIS_InteractiveContext) theContext, QWidget* parent )
       myViewActions( 0 )
 {
 
-    //XSynchronize( x11Display(),true ); // it is possible to use QApplication::syncX();
 #if X11_HACK
     XSynchronize( x11Info().display(),true ); // it is possible to use QApplication::syncX();
 #endif
@@ -210,7 +209,6 @@ void View::init()
 
 void View::paintEvent( QPaintEvent * )
 {
-    //  QApplication::syncX();
     if( myFirst )
     {
         init();
@@ -221,7 +219,6 @@ void View::paintEvent( QPaintEvent * )
 
 void View::resizeEvent( QResizeEvent *)
 {
-    //  QApplication::syncX();
     if( !myView.IsNull() )
     {
         myView->MustBeResized();
@@ -379,10 +376,8 @@ void View::initCursors()
         globPanCursor = new QCursor( Qt::CrossCursor );
     if ( !zoomCursor )
         zoomCursor = new QCursor(Qt::SplitVCursor);
-    //        zoomCursor = new QCursor( QPixmap( ApplicationCommonWindow::getResourceDir() + QString( "/" ) + QObject::tr( "ICON_CURSOR_ZOOM" ) ) );
     if ( !rotCursor )
         rotCursor = new QCursor(Qt::SplitHCursor);
-    //        rotCursor = new QCursor( QPixmap( ApplicationCommonWindow::getResourceDir() + QString( "/" ) + QObject::tr( "ICON_CURSOR_ROTATE" ) ) );
 }
 
 QList<QAction*>* View::getViewActions()
@@ -405,19 +400,13 @@ void View::initViewActions()
         return;
 
     myViewActions = new QList<QAction*>();
-    //  QString dir = ApplicationCommonWindow::getResourceDir() + QString( "/" );
     QAction* a;
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_FITALL") ), QObject::tr("MNU_FITALL"), this );
-    //  a->setToolTip( QObject::tr("TBR_FITALL") );
-    //  a->setStatusTip( QObject::tr("TBR_FITALL") );
     a = new QAction("Fitall",this);
     connect( a, SIGNAL( activated() ) , this, SLOT( fitAll() ) );
     myViewActions->insert(ViewFitAllId, a);
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_FITAREA") ), QObject::tr("MNU_FITAREA"), this );
-    //  a->setToolTip( QObject::tr("TBR_FITAREA") );
-    //  a->setStatusTip( QObject::tr("TBR_FITAREA") );
+
     a = new QAction("Fitarea",this);
     connect( a, SIGNAL( activated() ) , this, SLOT( fitArea() ) );
 
@@ -425,9 +414,6 @@ void View::initViewActions()
     connect( a, SIGNAL( toggled( bool ) ) , this, SLOT( updateToggled( bool ) ) );
     myViewActions->insert( ViewFitAreaId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_ZOOM") ), QObject::tr("MNU_ZOOM"), this );
-    //  a->setToolTip( QObject::tr("TBR_ZOOM") );
-    //  a->setStatusTip( QObject::tr("TBR_ZOOM") );
     a = new QAction("Zoom",this);
     connect( a, SIGNAL( activated() ) , this, SLOT( zoom() ) );
 
@@ -435,107 +421,74 @@ void View::initViewActions()
     connect( a, SIGNAL( toggled(bool) ) , this, SLOT( updateToggled(bool) ) );
     myViewActions->insert( ViewZoomId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_PAN") ), QObject::tr("MNU_PAN"), this );
-    //  a->setToolTip( QObject::tr("TBR_PAN") );
-    //  a->setStatusTip( QObject::tr("TBR_PAN") );
+
     a = new QAction("pan",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( pan() ) );
+    connect( a, SIGNAL( activated() ) , this, SLOT( pan() ) );
 
-      a->setCheckable( true );
-      connect( a, SIGNAL( toggled(bool) ) , this, SLOT( updateToggled(bool) ) );
-      myViewActions->insert( ViewPanId, a );
+    a->setCheckable( true );
+    connect( a, SIGNAL( toggled(bool) ) , this, SLOT( updateToggled(bool) ) );
+    myViewActions->insert( ViewPanId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_GLOBALPAN") ), QObject::tr("MNU_GLOBALPAN"), this );
-    //  a->setToolTip( QObject::tr("TBR_GLOBALPAN") );selectionChanged
-    //  a->setStatusTip( QObject::tr("TBR_GLOBALPAN") );
     a = new QAction("globalpan",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( globalPan() ) );
+    connect( a, SIGNAL( activated() ) , this, SLOT( globalPan() ) );
 
-      a->setCheckable( true );
-      connect( a, SIGNAL( toggled(bool) ) , this, SLOT( updateToggled(bool) ) );
-      myViewActions->insert( ViewGlobalPanId, a );
+    a->setCheckable( true );
+    connect( a, SIGNAL( toggled(bool) ) , this, SLOT( updateToggled(bool) ) );
+    myViewActions->insert( ViewGlobalPanId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_FRONT") ), QObject::tr("MNU_FRONT"), this );
-    //  a->setToolTip( QObject::tr("TBR_FRONT") );
-    //  a->setStatusTip( QObject::tr("TBR_FRONT") );
     a = new QAction("vfront",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( front() ) );
-      myViewActions->insert( ViewFrontId, a );
+    connect( a, SIGNAL( activated() ) , this, SLOT( front() ) );
+    myViewActions->insert( ViewFrontId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_BACK") ), QObject::tr("MNU_BACK"), this );
-    //  a->setToolTip( QObject::tr("TBR_BACK") );
-    //  a->setStatusTip( QObject::tr("TBR_BACK") );
+
     a = new QAction("vback",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( back() ) );
-      myViewActions->insert(ViewBackId, a);
+    connect( a, SIGNAL( activated() ) , this, SLOT( back() ) );
+    myViewActions->insert(ViewBackId, a);
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_TOP") ), QObject::tr("MNU_TOP"), this );
-    //  a->setToolTip( QObject::tr("TBR_TOP") );
-    //  a->setStatusTip( QObject::tr("TBR_TOP") );
+
     a = new QAction("vtop",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( top() ) );
-      myViewActions->insert( ViewTopId, a );
+    connect( a, SIGNAL( activated() ) , this, SLOT( top() ) );
+    myViewActions->insert( ViewTopId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_BOTTOM") ), QObject::tr("MNU_BOTTOM"), this );
-    //  a->setToolTip( QObject::tr("TBR_BOTTOM") );
-    //  a->setStatusTip( QObject::tr("TBR_BOTTOM") );
+
     a = new QAction("vbottom",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( bottom() ) );
-      myViewActions->insert( ViewBottomId, a );
+    connect( a, SIGNAL( activated() ) , this, SLOT( bottom() ) );
+    myViewActions->insert( ViewBottomId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_LEFT") ), QObject::tr("MNU_LEFT"), this );
-    //  a->setToolTip( QObject::tr("TBR_LEFT") );
-    //  a->setStatusTip( QObject::tr("TBR_LEFT") );
     a = new QAction("vleft",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( left() ) );
-      myViewActions->insert( ViewLeftId, a );
+    connect( a, SIGNAL( activated() ) , this, SLOT( left() ) );
+    myViewActions->insert( ViewLeftId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_RIGHT") ), QObject::tr("MNU_RIGHT"), this );
-    //  a->setToolTip( QObject::tr("TBR_RIGHT") );
-    //  a->setStatusTip( QObject::tr("TBR_RIGHT") );
+
     a = new QAction("vright",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( right() ) );
-      myViewActions->insert( ViewRightId, a );
+    connect( a, SIGNAL( activated() ) , this, SLOT( right() ) );
+    myViewActions->insert( ViewRightId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_AXO") ), QObject::tr("MNU_AXO"), this );
-    //  a->setToolTip( QObject::tr("TBR_AXO") );
-    //  a->setStatusTip( QObject::tr("TBR_AXO") );
+
     a = new QAction("axo",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( axo() ) );
-      myViewActions->insert( ViewAxoId, a );
+    connect( a, SIGNAL( activated() ) , this, SLOT( axo() ) );
+    myViewActions->insert( ViewAxoId, a );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_ROTATION") ), QObject::tr("MNU_ROTATION"), this );
-    //  a->setToolTip( QObject::tr("TBR_ROTATION") );
-    //  a->setStatusTip( QObject::tr("TBR_ROTATION") );
+
     a = new QAction("rot",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( rotation() ) );
-      a->setCheckable( true );
-      connect( a, SIGNAL( toggled(bool) ) , this, SLOT( updateToggled(bool) ) );
-      myViewActions->insert( ViewRotationId, a );
-
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_RESET") ), QObject::tr("MNU_RESET"), this );
-    //  a->setToolTip( QObject::tr("TBR_RESET") );
-    //  a->setStatusTip( QObject::tr("TBR_RESET") );
+    connect( a, SIGNAL( activated() ) , this, SLOT( rotation() ) );
+    a->setCheckable( true );
+    connect( a, SIGNAL( toggled(bool) ) , this, SLOT( updateToggled(bool) ) );
+    myViewActions->insert( ViewRotationId, a );
     a = new QAction("reset",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( reset() ) );
-      myViewActions->insert( ViewResetId, a );
+    connect( a, SIGNAL( activated() ) , this, SLOT( reset() ) );
+    myViewActions->insert( ViewResetId, a );
 
-      QActionGroup* ag = new QActionGroup( this );
+    QActionGroup* ag = new QActionGroup( this );
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_HLROFF") ), QObject::tr("MNU_HLROFF"), this );
-    //  a->setToolTip( QObject::tr("TBR_HLROFF") );
-    //  a->setStatusTip( QObject::tr("TBR_HLROFF") );
     a = new QAction("hlroff",this);
-      connect( a, SIGNAL( activated() ) , this, SLOT( hlrOff() ) );
-      a->setCheckable( true );
-      ag->addAction(a);
-      myViewActions->insert(ViewHlrOffId, a);
+    connect( a, SIGNAL( activated() ) , this, SLOT( hlrOff() ) );
+    a->setCheckable( true );
+    ag->addAction(a);
+    myViewActions->insert(ViewHlrOffId, a);
 
-    //  a = new QAction( QPixmap( dir+QObject::tr("ICON_VIEW_HLRON") ), QObject::tr("MNU_HLRON"), this );
-    //  a->setToolTip( QObject::tr("TBR_HLRON") );
-    //  a->setStatusTip( QObject::tr("TBR_HLRON") );
     a = new QAction("hlron",this);
-      connect( a, SIGNAL( activated() ) ,this, SLOT( hlrOn() ) );
+    connect( a, SIGNAL( activated() ) ,this, SLOT( hlrOn() ) );
 
     a->setCheckable( true );
     ag->addAction(a);
@@ -721,7 +674,7 @@ void View::onLButtonUp( Qt::MouseButtons nFlags, const QPoint point )
         break;
     }
     activateCursor( myCurrentMode );
-    //    ApplicationCommonWindow::getApplication()->onSelectionChanged();
+    emit selectionChanged();
 }
 
 void View::onMButtonUp( Qt::MouseButtons , const QPoint  )
@@ -1072,8 +1025,8 @@ Handle(V3d_Viewer) View::makeViewer() {
         graphics = new Graphic3d_GraphicDevice( aDisplay );
 #endif
     V3d_Viewer * viewer = new V3d_Viewer(graphics,aName,aDomain,ViewSize,ViewProj,
-                          Quantity_NOC_GRAY30,V3d_ZBUFFER,V3d_GOURAUD,V3d_WAIT,
-                          ComputedMode,aDefaultComputedMode,V3d_TEX_NONE);
+                                         Quantity_NOC_GRAY30,V3d_ZBUFFER,V3d_GOURAUD,V3d_WAIT,
+                                         ComputedMode,aDefaultComputedMode,V3d_TEX_NONE);
 #if !WITH_DRIVER
     viewer->Init();
 #endif
