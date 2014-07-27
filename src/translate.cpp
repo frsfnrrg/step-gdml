@@ -14,50 +14,11 @@
 #include <AIS_InteractiveObject.hxx>
 #include <AIS_DisplayMode.hxx>
 
-#include <FSD_File.hxx>
-
-#include <ShapeSchema.hxx>
-#include <Storage_Data.hxx>
-#include <Storage_Root.hxx>
-#include <Storage_HSeqOfRoot.hxx>
-#include <PTopoDS_HShape.hxx>
-#include <PTColStd_PersistentTransientMap.hxx>
-#include <PTColStd_TransientPersistentMap.hxx>
-
-#include <IGESControl_Reader.hxx>
-#include <IGESControl_Writer.hxx>
-#include <IGESControl_Controller.hxx>
 #include <STEPControl_Reader.hxx>
-#include <STEPControl_Writer.hxx>
-#include <STEPControl_StepModelType.hxx>
-#include <Interface_Static.hxx>
-//#include <Interface_TraceFile.hxx>
 
-#include <StlAPI_Writer.hxx>
-#include <VrmlAPI_Writer.hxx>
-
-#include <MgtBRep.hxx>
-#include <MgtBRep_TriangleMode.hxx>
-
-#include <BRepTools.hxx>
-#include <BRep_Tool.hxx>
-#include <BRep_Builder.hxx>
-
-#include <TopoDS.hxx>
 #include <TopoDS_Shape.hxx>
-#include <TopoDS_Compound.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
-
-#include <Geom_Line.hxx>
-#include <Geom_Curve.hxx>
-#include <Geom_Plane.hxx>
-#include <Geom_Surface.hxx>
-
-#include <TCollection_ExtendedString.hxx>
-
-#include <Standard_ErrorHandler.hxx>
-#include <Standard_CString.hxx>
 
 // ---------------------------- TranslateDlg -----------------------------------------
 
@@ -253,7 +214,7 @@ bool Translate::exportModel( const int format, const Handle(AIS_InteractiveConte
 
 bool Translate::exportModel( const int format, const QString& file, const Handle(TopTools_HSequenceOfShape)& shapes )
 {
-    bool status;
+    bool status = true;
     try {
         switch ( format )
         {
@@ -360,26 +321,7 @@ TranslateDlg* Translate::getDialog( const int format, const bool import )
         ((QFileDialog*)myDlg)->setFileMode( QFileDialog::AnyFile );
     }
 
-    QString datadir = (QString(getenv("CASROOT")) + QObject::tr( QString("INF_PATH_%1").arg( format ).toLatin1().constData() ) );
-
     myDlg->clear();
-
-    if ( !import )
-    {
-        switch ( format )
-        {
-        case FormatSTEP:
-            myDlg->addMode( STEPControl_ManifoldSolidBrep,      QObject::tr( "INF_BREP_MOIFOLD" ) );
-            myDlg->addMode( STEPControl_FacetedBrep,            QObject::tr( "INF_BREP_FACETED" ) );
-            myDlg->addMode( STEPControl_ShellBasedSurfaceModel, QObject::tr( "INF_BREP_SHELL" ) );
-            myDlg->addMode( STEPControl_GeometricCurveSet,      QObject::tr( "INF_BREP_CURVE" ) );
-            break;
-        case FormatCSFDB:
-            myDlg->addMode( MgtBRep_WithTriangle,    QObject::tr( "INF_TRIANGLES_YES" ) );
-            myDlg->addMode( MgtBRep_WithoutTriangle, QObject::tr( "INF_TRIANGLES_NO" ) );
-            break;
-        }
-    }
 
     return myDlg;
 }
@@ -402,7 +344,7 @@ Handle(TopTools_HSequenceOfShape) Translate::importSTEP( const QString& file )
         aReader.PrintCheckTransfer( failsonly, IFSelect_ItemsByEntity );
         for ( Standard_Integer n = 1; n <= nbr; n++ )
         {
-            bool ok = aReader.TransferRoot( n );
+            aReader.TransferRoot( n );
             int nbs = aReader.NbShapes();
             if ( nbs > 0 )
             {

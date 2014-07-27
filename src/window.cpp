@@ -1,7 +1,22 @@
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX >= 0x060503
+#define WITH_DRIVER 1
+#else
+#define WITH_DRIVER 0
+#endif
+
 #include "window.h"
+#include "view.h"
+#include "translate.h"
 #include "util.h"
 #include <cstdio>
+
+#if WITH_DRIVER
+#include <OpenGl_GraphicDriver.hxx>
+#include <Aspect_DisplayConnection.hxx>
+#else
 #include <Graphic3d_GraphicDevice.hxx>
+#endif
 
 Handle(V3d_Viewer) make_viewer(const Standard_CString aDisplay,
                                const Standard_ExtString aName,
@@ -10,16 +25,25 @@ Handle(V3d_Viewer) make_viewer(const Standard_CString aDisplay,
                                const V3d_TypeOfOrientation ViewProj,
                                const Standard_Boolean ComputedMode,
                                const Standard_Boolean aDefaultComputedMode) {
+#if WITH_DRIVER
+    static Handle(Graphic3d_GraphicDriver) defaultdevice;
+    static Handle(Aspect_DisplayConnection) connection;
+    if( defaultdevice.IsNull() ) {
+        connection = new Aspect_DisplayConnection(aDisplay);
+        defaultdevice = new OpenGl_GraphicDriver(connection);
+    }
+#else
     static Handle(Graphic3d_GraphicDevice) defaultdevice;
     if( defaultdevice.IsNull() )
         defaultdevice = new Graphic3d_GraphicDevice( aDisplay );
+#endif
     return new V3d_Viewer(defaultdevice,aName,aDomain,ViewSize,ViewProj,
                           Quantity_NOC_GRAY30,V3d_ZBUFFER,V3d_GOURAUD,V3d_WAIT,
                           ComputedMode,aDefaultComputedMode,V3d_TEX_NONE);
 
 }
 
-Window::Window(QWidget *parent) :
+MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
     setWindowTitle("STEP to GDML");
@@ -31,7 +55,9 @@ Window::Window(QWidget *parent) :
     Handle(V3d_Viewer) myViewer = make_viewer( getenv("DISPLAY"), a3DName.ToExtString(), "", 1000.0,
                                                V3d_XposYnegZpos, Standard_True, Standard_True );
 
+#if OCC_VERSION_HEX < 0x060503
     myViewer->Init();
+#endif
     myViewer->SetDefaultLights();
     myViewer->SetLightOn();
 
@@ -46,7 +72,7 @@ Window::Window(QWidget *parent) :
     this->setCentralWidget(e);
 }
 
-void Window::import_file(QString s) {
+void MainWindow::import_file(QString s) {
     printf("Importing file %s\n", s.toLocal8Bit().data());
     bool success = translate->importModel(Translate::FormatSTEP, context);
     printf("Success %c\n", success ? 'Y' : 'N');
@@ -56,20 +82,20 @@ void Window::import_file(QString s) {
     view->fitAll();
 }
 
-void Window::setShadingMode() {
+void MainWindow::setShadingMode() {
     for( context->InitCurrent(); context->MoreCurrent(); context->NextCurrent() ) {
         context->SetDisplayMode( context->Current(), 1, false );
     }
     context->UpdateCurrentViewer();
 }
 
-void Window::export_file(QString s) {
+void MainWindow::export_file(QString s) {
     printf("Exporting file %s\n", s.toLocal8Bit().data());
     bool success = translate->exportModel(Translate::FormatGDML, s, translate->getShapes(context));
     printf("Success %c\n", success ? 'Y' : 'N');
 }
 
-void Window::createMenus() {
+void MainWindow::createMenus() {
     QAction* quit = mkAction(this, "Quit", "Ctrl+Q");
     connect(quit, SIGNAL(triggered()), this, SLOT(close()));
 

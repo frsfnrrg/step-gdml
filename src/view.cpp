@@ -1,7 +1,15 @@
 #define QT_CLEAN_NAMESPACE         /* avoid definition of INT32 and INT8 */
 
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX >= 0x060503
+#define WITH_DRIVER 1
+#define DEGENERATE_MODE 0
+#else
+#define WITH_DRIVER 0
+#define DEGENERATE_MODE 1
+#endif
+
 #include "view.h"
-//#include "ApplicationCommon.h"
 
 #include <QApplication>
 #include <QPainter>
@@ -23,8 +31,18 @@
 #include <X11/Xmu/StdCmap.h>
 #include <X11/Xlib.h>
 #include <Xw_Window.hxx>
+
+#if WITH_DRIVER
+#include <Graphic3d_ExportFormat.hxx>
+#include <Graphic3d_GraphicDriver.hxx>
+#include <Graphic3d_TextureEnv.hxx>
+#else
 #include <Graphic3d_GraphicDevice.hxx>
+#endif
+
 #include <QColormap>
+
+
 
 // the key for multi selection :
 #define MULTISELECTIONKEY Qt::ShiftModifier
@@ -167,7 +185,14 @@ void View::init()
     short hi, lo;
     lo = (short) windowHandle;
     hi = (short) (windowHandle >> 16);
+
+#if WITH_DRIVER
+    Window aWindowHandle = (Window )winId();
+    Handle(Aspect_DisplayConnection) aDispConnection = myContext->CurrentViewer()->Driver()->GetDisplayConnection();
+    Handle(Xw_Window) hWnd = new Xw_Window (aDispConnection, aWindowHandle);
+#else
     Handle(Xw_Window) hWnd = new Xw_Window(Handle(Graphic3d_GraphicDevice)::DownCast(myContext->CurrentViewer()->Device()),(int) hi,(int) lo,Xw_WQ_SAMEQUALITY);
+#endif
 
     myView->SetWindow( hWnd );
     if ( !hWnd->IsMapped() )
@@ -277,16 +302,20 @@ void View::reset()
 void View::hlrOff()
 {
     QApplication::setOverrideCursor( Qt::WaitCursor );
+#if DEGENERATE_MODE
     myView->SetDegenerateModeOn();
     myDegenerateModeIsOn = Standard_True;
+#endif
     QApplication::restoreOverrideCursor();
 }
 
 void View::hlrOn()
 {
     QApplication::setOverrideCursor( Qt::WaitCursor );
+#if DEGENERATE_MODE
     myView->SetDegenerateModeOff();
     myDegenerateModeIsOn = Standard_False;
+#endif
     QApplication::restoreOverrideCursor();
 }
 
@@ -589,8 +618,10 @@ void View::onLButtonDown( const int/*Qt::MouseButtons*/ nFlags, const QPoint poi
         case CurAction3d_GlobalPanning:
             break;
         case CurAction3d_DynamicRotation:
+#if DEGENERATE_MODE
             if ( !myDegenerateModeIsOn )
                 myView->SetDegenerateModeOn();
+#endif
             myView->StartRotation( point.x(), point.y() );
             break;
         default:
@@ -612,8 +643,10 @@ void View::onRButtonDown( const int/*Qt::MouseButtons*/ nFlags, const QPoint poi
 {
     if ( nFlags & CASCADESHORTCUTKEY )
     {
+#if DEGENERATE_MODE
         if ( !myDegenerateModeIsOn )
             myView->SetDegenerateModeOn();
+#endif
         myCurrentMode = CurAction3d_DynamicRotation;
         myView->StartRotation( point.x(), point.y() );
     }
@@ -700,6 +733,7 @@ void View::onRButtonUp( Qt::MouseButtons nFlags, const QPoint point )
         QApplication::setOverrideCursor( Qt::WaitCursor );
         // reset tyhe good Degenerated mode according to the strored one
         //   --> dynamic rotation may have change it
+#if DEGENERATE_MODE
         if ( !myDegenerateModeIsOn )
         {
             myView->SetDegenerateModeOff();
@@ -710,6 +744,7 @@ void View::onRButtonUp( Qt::MouseButtons nFlags, const QPoint point )
             myView->SetDegenerateModeOn();
             myDegenerateModeIsOn = Standard_True;
         }
+#endif
         QApplication::restoreOverrideCursor();
         myCurrentMode = CurAction3d_Nothing;
     }

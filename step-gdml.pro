@@ -1,6 +1,10 @@
 TEMPLATE = app
 CONFIG += debug_and_release qt
 
+#################
+#### TARGETS ####
+#################
+
 TARGET = step-gdml
 
 HEADERS = src/util.h \
@@ -15,33 +19,40 @@ SOURCES = src/main.cpp \
     src/translate.cpp \
     src/gdmlwriter.cpp
 
-DEFINES = CSFDB
-
-CASROOT = /opt/OpenCASCADE
-
-INCLUDEPATH = $$CASROOT $$CASROOT/inc $(QTDIR)/include/QtCore \
-              $(QTDIR)/include/QtGui $(QTDIR)/include
-
 DESTDIR = ./build/bin
 OBJECTS_DIR = ./build/obj
 MOC_DIR = ./build/moc
 
+DEFINES = CSFDB
+
+##################
+#### INCLUDES ####
+##################
+
+CASROOT = $$(CASROOT)
+isEmpty (CASROOT) {
+    CASROOT = /opt/OpenCASCADE
+}
+message (CASROOT is $$CASROOT)
+
+INCLUDEPATH = $$CASROOT $$CASROOT/inc $(QTDIR)/include/QtCore \
+              $(QTDIR)/include/QtGui $(QTDIR)/include
 INCLUDEPATH += $$QMAKE_INCDIR_X11 $$QMAKE_INCDIR_OPENGL $$QMAKE_INCDIR_THREAD
 DEFINES += LIN LININTEL OCC_CONVERT_SIGNALS HAVE_CONFIG_H HAVE_WOK_CONFIG_H QT_NO_STL
-LIBS = -L$$CASROOT/lib -L$$QMAKE_LIBDIR_X11 $$QMAKE_LIBS_X11 -L$$QMAKE_LIBDIR_OPENGL $$QMAKE_LIBS_OPENGL $$QMAKE_LIBS_THREAD
 
-FREEIMAGE_DIR = $$(FREEIMAGEDIR)
-exists($$FREEIMAGE_DIR) {
-    LIBS += -L$(FREEIMAGEDIR)/lib -lfreeimageplus
-}
-TBB_LIB = $$(TBBLIB)
-exists($$TBB_LIB) {
-    LIBS += -L$(TBBLIB) -ltbb -ltbbmalloc
-}
+##############
+#### LIBS ####
+##############
 
-LIBS += -lTKernel -lPTKernel -lTKMath -lTKService -lTKV3d -lTKV2d \
+# To place CASROOT before -L/usr/lib in case we override it
+QMAKE_LFLAGS += -L$$CASROOT/lib
+
+LIBS += -lTKernel -lPTKernel -lTKMath -lTKService -lTKV3d -lTKOpenGl \
         -lTKBRep -lTKIGES -lTKSTL -lTKVRML -lTKSTEP -lTKSTEPAttr -lTKSTEP209 \
         -lTKSTEPBase -lTKShapeSchema -lTKGeomBase -lTKGeomAlgo -lTKG3d -lTKG2d \
         -lTKXSBase -lTKPShape -lTKShHealing -lTKHLR -lTKTopAlgo -lTKMesh -lTKPrim \
-        -lTKCDF -lTKBool -lTKBO -lTKFillet -lTKOffset \
-    -L$(QTDIR)/lib -lQtCore -lQtGui
+        -lTKCDF -lTKBool -lTKBO -lTKFillet -lTKOffset
+LIBS += -L/usr/lib -lQtCore -lQtGui
+LIBS += -L$$QMAKE_LIBDIR_X11 $$QMAKE_LIBS_X11
+LIBS += -L$$QMAKE_LIBDIR_OPENGL $$QMAKE_LIBS_OPENGL $$QMAKE_LIBS_THREAD
+

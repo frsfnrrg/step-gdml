@@ -3,16 +3,16 @@
 
 #include <QtGui>
 #include "util.h"
-#include "view.h"
-#include "translate.h"
 
 class AIS_InteractiveContext;
+class View;
+class Translate;
 
-class Window : public QMainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit Window(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = 0);
 
 signals:
 
