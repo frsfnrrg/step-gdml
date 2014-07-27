@@ -10,38 +10,8 @@
 #include "translate.h"
 #include "util.h"
 #include <cstdio>
-
-#if WITH_DRIVER
-#include <OpenGl_GraphicDriver.hxx>
-#include <Aspect_DisplayConnection.hxx>
-#else
-#include <Graphic3d_GraphicDevice.hxx>
-#endif
-
-Handle(V3d_Viewer) make_viewer(const Standard_CString aDisplay,
-                               const Standard_ExtString aName,
-                               const Standard_CString aDomain,
-                               const Standard_Real ViewSize,
-                               const V3d_TypeOfOrientation ViewProj,
-                               const Standard_Boolean ComputedMode,
-                               const Standard_Boolean aDefaultComputedMode) {
-#if WITH_DRIVER
-    static Handle(Graphic3d_GraphicDriver) defaultdevice;
-    static Handle(Aspect_DisplayConnection) connection;
-    if( defaultdevice.IsNull() ) {
-        connection = new Aspect_DisplayConnection(aDisplay);
-        defaultdevice = new OpenGl_GraphicDriver(connection);
-    }
-#else
-    static Handle(Graphic3d_GraphicDevice) defaultdevice;
-    if( defaultdevice.IsNull() )
-        defaultdevice = new Graphic3d_GraphicDevice( aDisplay );
-#endif
-    return new V3d_Viewer(defaultdevice,aName,aDomain,ViewSize,ViewProj,
-                          Quantity_NOC_GRAY30,V3d_ZBUFFER,V3d_GOURAUD,V3d_WAIT,
-                          ComputedMode,aDefaultComputedMode,V3d_TEX_NONE);
-
-}
+#include <V3d_Viewer.hxx>
+#include <V3d_View.hxx>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
@@ -49,20 +19,15 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowTitle("STEP to GDML");
     createMenus();
 
-    translate = new Translate(this);
+    Handle(V3d_Viewer) myViewer = View::makeViewer();
 
-    TCollection_ExtendedString a3DName("Visu3D");
-    Handle(V3d_Viewer) myViewer = make_viewer( getenv("DISPLAY"), a3DName.ToExtString(), "", 1000.0,
-                                               V3d_XposYnegZpos, Standard_True, Standard_True );
-
-#if OCC_VERSION_HEX < 0x060503
-    myViewer->Init();
-#endif
     myViewer->SetDefaultLights();
     myViewer->SetLightOn();
 
     context = new AIS_InteractiveContext(myViewer);
     view = new View(context, this);
+    translate = new Translator(context);
+
 
     QHBoxLayout* layout = new QHBoxLayout();
     layout->addWidget(new QLabel("WEE"), 1);
@@ -70,46 +35,47 @@ MainWindow::MainWindow(QWidget *parent) :
     QWidget* e = new QWidget();
     e->setLayout(layout);
     this->setCentralWidget(e);
+
+    stepdialog = NULL;
+    gdmldialog = NULL;
 }
 
-void MainWindow::import_file(QString s) {
-    printf("Importing file %s\n", s.toLocal8Bit().data());
-    bool success = translate->importModel(Translate::FormatSTEP, context);
+void MainWindow::importSTEP(QString path) {
+    printf("Importing file %s\n", path.toLocal8Bit().data());
+    bool success = translate->importSTEP(path);
     printf("Success %c\n", success ? 'Y' : 'N');
-
-    setShadingMode();
-
     view->fitAll();
 }
 
-void MainWindow::setShadingMode() {
-    for( context->InitCurrent(); context->MoreCurrent(); context->NextCurrent() ) {
-        context->SetDisplayMode( context->Current(), 1, false );
-    }
-    context->UpdateCurrentViewer();
-}
 
-void MainWindow::export_file(QString s) {
-    printf("Exporting file %s\n", s.toLocal8Bit().data());
-    bool success = translate->exportModel(Translate::FormatGDML, s, translate->getShapes(context));
+void MainWindow::exportGDML(QString path) {
+    printf("Exporting file %s\n", path.toLocal8Bit().data());
+    bool success = translate->exportGDML(path);
     printf("Success %c\n", success ? 'Y' : 'N');
 }
 
+void MainWindow::raiseSTEP() {
+    if (!stepdialog) {
+        stepdialog = new IODialog(this, QFileDialog::AcceptOpen, QStringList("Step Files (*.stp *.step)"), "stp");
+        stepdialog->hook(this, SLOT(importSTEP(QString)));
+    }
+    stepdialog->display();
+}
+
+void MainWindow::raiseGDML() {
+    if (!gdmldialog) {
+        gdmldialog = new IODialog(this, QFileDialog::AcceptSave, QStringList("GDML Files (*.gdml)"), "gdml");
+        gdmldialog->hook(this, SLOT(exportGDML(QString)));
+    }
+    gdmldialog->display();
+}
+
 void MainWindow::createMenus() {
-    QAction* quit = mkAction(this, "Quit", "Ctrl+Q");
-    connect(quit, SIGNAL(triggered()), this, SLOT(close()));
+    QAction* quit = mkAction(this, "Quit", "Ctrl+Q", SLOT(close()));
 
-    QSignalMapper* loadmap = new QSignalMapper(this);
-    QAction* load = mkAction(this, "Load STEP file...", "Ctrl+O");
-    connect(load, SIGNAL(triggered()), loadmap, SLOT(map()));
-    loadmap->setMapping(load, QString("wing.stp"));
-    connect(loadmap, SIGNAL(mapped(QString)), this, SLOT(import_file(QString)));
+    QAction* load = mkAction(this, "Load STEP file...", "Ctrl+O", SLOT(raiseSTEP()));
 
-    QSignalMapper* expomap = new QSignalMapper(this);
-    QAction* expo = mkAction(this, "Export GDML file", "Ctrl+E");
-    connect(expo, SIGNAL(triggered()), expomap, SLOT(map()));
-    expomap->setMapping(expo, QString("output.gdml"));
-    connect(expomap, SIGNAL(mapped(QString)), this, SLOT(export_file(QString)));
+    QAction* expo = mkAction(this, "Export GDML file", "Ctrl+E", SLOT(raiseGDML()));
 
     QMenu* fileMenu = new QMenu("File", this);
     fileMenu->addAction(load);

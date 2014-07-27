@@ -19,11 +19,12 @@ SOURCES = src/main.cpp \
     src/translate.cpp \
     src/gdmlwriter.cpp
 
-DESTDIR = ./build/bin
+DESTDIR = .
 OBJECTS_DIR = ./build/obj
 MOC_DIR = ./build/moc
+RCC_DIR = ./build/rcc
 
-DEFINES = CSFDB
+DEFINES = CSFDB QT_NO_DEPRECATED
 
 ##################
 #### INCLUDES ####
@@ -38,7 +39,7 @@ message (CASROOT is $$CASROOT)
 INCLUDEPATH = $$CASROOT $$CASROOT/inc $(QTDIR)/include/QtCore \
               $(QTDIR)/include/QtGui $(QTDIR)/include
 INCLUDEPATH += $$QMAKE_INCDIR_X11 $$QMAKE_INCDIR_OPENGL $$QMAKE_INCDIR_THREAD
-DEFINES += LIN LININTEL OCC_CONVERT_SIGNALS HAVE_CONFIG_H HAVE_WOK_CONFIG_H QT_NO_STL
+DEFINES += LIN LININTEL OCC_CONVERT_SIGNALS HAVE_CONFIG_H HAVE_WOK_CONFIG_H
 
 ##############
 #### LIBS ####

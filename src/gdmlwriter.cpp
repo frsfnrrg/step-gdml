@@ -8,6 +8,7 @@
 #include <StlMesh_MeshExplorer.hxx>
 #include <BRep_Builder.hxx>
 #include <Standard_Version.hxx>
+
 #include <QSet>
 #include <QMap>
 

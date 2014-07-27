@@ -8,6 +8,7 @@
 #define WITH_DRIVER 0
 #define DEGENERATE_MODE 1
 #endif
+#define X11_HACK 0
 
 #include "view.h"
 
@@ -20,29 +21,33 @@
 #include <QMouseEvent>
 #include <QRubberBand>
 
+#include <V3d_View.hxx>
 #include <Visual3d_View.hxx>
 #include <Graphic3d_ExportFormat.hxx>
 #include <QWindowsStyle>
 
+#if X11_HACK
 #include <QX11Info>
 #include <GL/glx.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/Xmu/StdCmap.h>
 #include <X11/Xlib.h>
+#endif
+
 #include <Xw_Window.hxx>
 
 #if WITH_DRIVER
 #include <Graphic3d_ExportFormat.hxx>
 #include <Graphic3d_GraphicDriver.hxx>
 #include <Graphic3d_TextureEnv.hxx>
+#include <OpenGl_GraphicDriver.hxx>
+#include <Aspect_DisplayConnection.hxx>
 #else
 #include <Graphic3d_GraphicDevice.hxx>
 #endif
 
 #include <QColormap>
-
-
 
 // the key for multi selection :
 #define MULTISELECTIONKEY Qt::ShiftModifier
@@ -66,7 +71,9 @@ View::View( Handle(AIS_InteractiveContext) theContext, QWidget* parent )
 {
 
     //XSynchronize( x11Display(),true ); // it is possible to use QApplication::syncX();
+#if X11_HACK
     XSynchronize( x11Info().display(),true ); // it is possible to use QApplication::syncX();
+#endif
 
     myFirst = true;
     myContext = theContext;
@@ -81,7 +88,7 @@ View::View( Handle(AIS_InteractiveContext) theContext, QWidget* parent )
     setAttribute(Qt::WA_PaintOnScreen);
     setAttribute(Qt::WA_NoSystemBackground);
 
-#if 0
+#if X11_HACK
     XVisualInfo* pVisualInfo;
     if ( x11Info().display() )
     {
@@ -180,17 +187,16 @@ void View::init()
         myView = v->CreateView();
     }
 
-    int windowHandle = (int) winId();
-
-    short hi, lo;
-    lo = (short) windowHandle;
-    hi = (short) (windowHandle >> 16);
-
 #if WITH_DRIVER
     Window aWindowHandle = (Window )winId();
     Handle(Aspect_DisplayConnection) aDispConnection = myContext->CurrentViewer()->Driver()->GetDisplayConnection();
     Handle(Xw_Window) hWnd = new Xw_Window (aDispConnection, aWindowHandle);
 #else
+    int windowHandle = (int) winId();
+
+    short hi, lo;
+    lo = (short) windowHandle;
+    hi = (short) (windowHandle >> 16);
     Handle(Xw_Window) hWnd = new Xw_Window(Handle(Graphic3d_GraphicDevice)::DownCast(myContext->CurrentViewer()->Device()),(int) hi,(int) lo,Xw_WQ_SAMEQUALITY);
 #endif
 
@@ -198,11 +204,11 @@ void View::init()
     if ( !hWnd->IsMapped() )
         hWnd->Map();
     myView->SetBackgroundColor(Quantity_NOC_BLACK);
-    myView->TriedronDisplay( Aspect_TOTP_LEFT_LOWER, Quantity_NOC_WHITE, 0.1, V3d_WIREFRAME );
+    myView->TriedronDisplay( Aspect_TOTP_RIGHT_LOWER, Quantity_NOC_WHITE, 0.1, V3d_WIREFRAME );
     myView->MustBeResized();
 }
 
-void View::paintEvent( QPaintEvent * e )
+void View::paintEvent( QPaintEvent * )
 {
     //  QApplication::syncX();
     if( myFirst )
@@ -213,7 +219,7 @@ void View::paintEvent( QPaintEvent * e )
     myView->Redraw();
 }
 
-void View::resizeEvent( QResizeEvent * e)
+void View::resizeEvent( QResizeEvent *)
 {
     //  QApplication::syncX();
     if( !myView.IsNull() )
@@ -632,7 +638,7 @@ void View::onLButtonDown( const int/*Qt::MouseButtons*/ nFlags, const QPoint poi
     activateCursor( myCurrentMode );
 }
 
-void View::onMButtonDown( const int/*Qt::MouseButtons*/ nFlags, const QPoint point )
+void View::onMButtonDown( const int/*Qt::MouseButtons*/ nFlags, const QPoint )
 {
     if ( nFlags & CASCADESHORTCUTKEY )
         myCurrentMode = CurAction3d_DynamicPanning;
@@ -718,13 +724,13 @@ void View::onLButtonUp( Qt::MouseButtons nFlags, const QPoint point )
     //    ApplicationCommonWindow::getApplication()->onSelectionChanged();
 }
 
-void View::onMButtonUp( Qt::MouseButtons nFlags, const QPoint point )
+void View::onMButtonUp( Qt::MouseButtons , const QPoint  )
 {
     myCurrentMode = CurAction3d_Nothing;
     activateCursor( myCurrentMode );
 }
 
-void View::onRButtonUp( Qt::MouseButtons nFlags, const QPoint point )
+void View::onRButtonUp( Qt::MouseButtons , const QPoint point )
 {
     if ( myCurrentMode == CurAction3d_Nothing )
         Popup( point.x(), point.y() );
@@ -827,7 +833,7 @@ void View::DragEvent( const int x, const int y, const int TheState )
     }
 }
 
-void View::InputEvent( const int x, const int y )
+void View::InputEvent( const int, const int )
 {
     myContext->Select();
     emit selectionChanged();
@@ -860,13 +866,13 @@ void View::MultiDragEvent( const int x, const int y, const int TheState )
     }
 }
 
-void View::MultiInputEvent( const int x, const int y )
+void View::MultiInputEvent( const int , const int  )
 {
     myContext->ShiftSelect();
     emit selectionChanged();
 }
 
-void View::Popup( const int x, const int y )
+void View::Popup( const int , const int  )
 {
     printf("popup! \n");
     //  ApplicationCommonWindow* stApp = ApplicationCommonWindow::getApplication();
@@ -910,7 +916,7 @@ void View::Popup( const int x, const int y )
     //    w->setFocus();
 }
 
-void View::addItemInPopup( QMenu* theMenu)
+void View::addItemInPopup( QMenu* )
 {
 }
 
@@ -1043,5 +1049,34 @@ View::CurrentAction3d View::getCurrentMode()
     return myCurrentMode;
 }
 
+Handle(V3d_Viewer) View::makeViewer() {
+    const Standard_CString aDisplay = getenv("DISPLAY");
+    const TCollection_ExtendedString a3DName("Visu3D");
+    const Standard_ExtString aName = a3DName.ToExtString();
+    const Standard_CString aDomain = "";
+    const Standard_Real ViewSize = 1000.0;
+    const V3d_TypeOfOrientation ViewProj = V3d_XposYnegZpos;
+    const Standard_Boolean ComputedMode = Standard_True;
+    const Standard_Boolean aDefaultComputedMode = Standard_True;
 
+#if WITH_DRIVER
+    static Handle(Graphic3d_GraphicDriver) graphics;
+    static Handle(Aspect_DisplayConnection) connection;
+    if( graphics.IsNull() ) {
+        connection = new Aspect_DisplayConnection(aDisplay);
+        graphics = new OpenGl_GraphicDriver(connection);
+    }
+#else
+    static Handle(Graphic3d_GraphicDevice) graphics;
+    if( graphics.IsNull() )
+        graphics = new Graphic3d_GraphicDevice( aDisplay );
+#endif
+    V3d_Viewer * viewer = new V3d_Viewer(graphics,aName,aDomain,ViewSize,ViewProj,
+                          Quantity_NOC_GRAY30,V3d_ZBUFFER,V3d_GOURAUD,V3d_WAIT,
+                          ComputedMode,aDefaultComputedMode,V3d_TEX_NONE);
+#if !WITH_DRIVER
+    viewer->Init();
+#endif
+    return viewer;
+}
 

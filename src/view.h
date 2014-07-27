@@ -5,13 +5,14 @@
 #include <QAction>
 #include <QList>
 
+#include <Standard.hxx>
 #include <AIS_InteractiveContext.hxx>
-#include <V3d_View.hxx>
+#include <Quantity_Factor.hxx>
 
+class V3d_View;
 class TopoDS_Shape;
 class QRubberBand;
 
-//class COMMONSAMPLE_EXPORT View: public QWidget
 class View: public QWidget
 {
     Q_OBJECT
@@ -25,8 +26,7 @@ public:
                       ViewFrontId, ViewBackId, ViewTopId, ViewBottomId, ViewLeftId, ViewRightId,
                       ViewAxoId, ViewRotationId, ViewResetId, ViewHlrOffId, ViewHlrOnId };
 
-    View( Handle(AIS_InteractiveContext) theContext,
-          QWidget* parent);
+    View( Handle(AIS_InteractiveContext) theContext, QWidget* parent);
     ~View();
 
     virtual void                  init();
@@ -40,7 +40,7 @@ public:
     static QString                GetShapeType( TopAbs_ShapeEnum aShapeType );
 
     Standard_EXPORT static void   OnButtonuseraction( int ExerciceSTEP,
-						                              Handle(AIS_InteractiveContext)& );
+                                                      Handle(AIS_InteractiveContext)& );
     Standard_EXPORT static void   DoSelection( int Id,
                                                Handle(AIS_InteractiveContext)& );
     Standard_EXPORT static void   OnSetSelectionMode( Handle(AIS_InteractiveContext)&,
@@ -48,6 +48,9 @@ public:
 						                              TopAbs_ShapeEnum& SelectionMode,
 						                              Standard_Boolean& );
 	virtual QPaintEngine*          paintEngine() const;
+
+    static Handle(V3d_Viewer)     makeViewer(
+            );
 signals:
     void                          selectionChanged();
 

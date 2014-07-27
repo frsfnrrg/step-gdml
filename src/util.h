@@ -4,7 +4,7 @@
 #include <QtGui>
 #include <QtCore>
 
-QAction* mkAction(QObject* parent, const char* text, const char* shortcut);
+QAction* mkAction(QObject* parent, const char* text, const char* shortcut, const char* slot);
 
 //class QDialogHandle : QObject {
 //public:

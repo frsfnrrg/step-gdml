@@ -6,7 +6,8 @@
 
 class AIS_InteractiveContext;
 class View;
-class Translate;
+class Translator;
+class IODialog;
 
 class MainWindow : public QMainWindow
 {
@@ -17,16 +18,20 @@ public:
 signals:
 
 public slots:
-    void import_file(QString);
-    void export_file(QString);
+    void importSTEP(QString);
+    void exportGDML(QString);
+    void raiseSTEP();
+    void raiseGDML();
 
 private:
     void createMenus();
-    void setShadingMode();
 
     View* view;
     AIS_InteractiveContext* context;
-    Translate* translate;
+    Translator* translate;
+    IODialog* stepdialog;
+    IODialog* gdmldialog;
 };
+
 
 #endif // WINDOW_H
