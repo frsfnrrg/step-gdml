@@ -205,6 +205,7 @@ void View::init()
     myView->SetBackgroundColor(Quantity_NOC_BLACK);
     myView->TriedronDisplay( Aspect_TOTP_RIGHT_LOWER, Quantity_NOC_WHITE, 0.1, V3d_WIREFRAME );
     myView->MustBeResized();
+    emit readyToUse();
 }
 
 void View::paintEvent( QPaintEvent * )
@@ -302,26 +303,6 @@ void View::reset()
     myView->Reset();
 }
 
-void View::hlrOff()
-{
-    QApplication::setOverrideCursor( Qt::WaitCursor );
-#if DEGENERATE_MODE
-    myView->SetDegenerateModeOn();
-    myDegenerateModeIsOn = Standard_True;
-#endif
-    QApplication::restoreOverrideCursor();
-}
-
-void View::hlrOn()
-{
-    QApplication::setOverrideCursor( Qt::WaitCursor );
-#if DEGENERATE_MODE
-    myView->SetDegenerateModeOff();
-    myDegenerateModeIsOn = Standard_False;
-#endif
-    QApplication::restoreOverrideCursor();
-}
-
 void View::updateToggled( bool isOn )
 {
     QAction* sentBy = (QAction*)sender();
@@ -329,7 +310,7 @@ void View::updateToggled( bool isOn )
     if( !isOn )
         return;
 
-    for ( int i = ViewFitAllId; i < ViewHlrOffId; i++ )
+    for ( int i = ViewFitAllId; i < ViewResetId; i++ )
     {
         QAction* anAction = myViewActions->at( i );
         if ( ( anAction == myViewActions->at( ViewFitAreaId ) ) ||
@@ -373,11 +354,11 @@ void View::initCursors()
     if ( !panCursor )
         panCursor = new QCursor( Qt::SizeAllCursor );
     if ( !globPanCursor )
-        globPanCursor = new QCursor( Qt::CrossCursor );
+        globPanCursor = new QCursor( Qt::SizeAllCursor );
     if ( !zoomCursor )
-        zoomCursor = new QCursor(Qt::SplitVCursor);
+        zoomCursor = new QCursor(Qt::CrossCursor);
     if ( !rotCursor )
-        rotCursor = new QCursor(Qt::SplitHCursor);
+        rotCursor = new QCursor(Qt::OpenHandCursor);
 }
 
 QList<QAction*>* View::getViewActions()
@@ -478,21 +459,6 @@ void View::initViewActions()
     a = new QAction("reset",this);
     connect( a, SIGNAL( activated() ) , this, SLOT( reset() ) );
     myViewActions->insert( ViewResetId, a );
-
-    QActionGroup* ag = new QActionGroup( this );
-
-    a = new QAction("hlroff",this);
-    connect( a, SIGNAL( activated() ) , this, SLOT( hlrOff() ) );
-    a->setCheckable( true );
-    ag->addAction(a);
-    myViewActions->insert(ViewHlrOffId, a);
-
-    a = new QAction("hlron",this);
-    connect( a, SIGNAL( activated() ) ,this, SLOT( hlrOn() ) );
-
-    a->setCheckable( true );
-    ag->addAction(a);
-    myViewActions->insert( ViewHlrOnId, a );
 }
 
 void View::mousePressEvent( QMouseEvent* e )
@@ -918,7 +884,7 @@ void View::DrawRectangle(const int MinX, const int MinY,
 
 void View::noActiveActions()
 {
-    for ( int i = ViewFitAllId; i < ViewHlrOffId ; i++ )
+    for ( int i = ViewFitAllId; i < ViewResetId ; i++ )
     {
         QAction* anAction = myViewActions->at( i );
         if( ( anAction == myViewActions->at( ViewFitAreaId ) ) ||

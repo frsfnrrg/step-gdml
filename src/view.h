@@ -24,7 +24,7 @@ protected:
 public:
     enum ViewAction { ViewFitAllId, ViewFitAreaId, ViewZoomId, ViewPanId, ViewGlobalPanId,
                       ViewFrontId, ViewBackId, ViewTopId, ViewBottomId, ViewLeftId, ViewRightId,
-                      ViewAxoId, ViewRotationId, ViewResetId, ViewHlrOffId, ViewHlrOnId };
+                      ViewAxoId, ViewRotationId, ViewResetId};
 
     View( Handle(AIS_InteractiveContext) theContext, QWidget* parent);
     ~View();
@@ -53,6 +53,7 @@ public:
             );
 signals:
     void                          selectionChanged();
+    void                          readyToUse();
 
 public slots:
     void                          fitAll();
@@ -69,8 +70,6 @@ public slots:
     void                          axo();
     void                          rotation();
     void                          reset();
-    void                          hlrOn();
-    void                          hlrOff();
     void                          updateToggled( bool );
     void                          onBackground();
 

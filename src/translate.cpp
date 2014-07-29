@@ -1,14 +1,6 @@
 #include "translate.h"
 
-#include <QDir>
-#include <QLayout>
-#include <QComboBox>
-#include <QGroupBox>
-#include <QList>
-#include <QListView>
-#include <QFileDialog>
-#include <QApplication>
-#include <QWidget>
+#include "gdmlwriter.h"
 
 #include <AIS_Shape.hxx>
 #include <AIS_InteractiveObject.hxx>
@@ -51,17 +43,6 @@ IODialog::IODialog(QWidget* parent, QFileDialog::AcceptMode mode, QStringList fi
     fd->setNameFilterDetailsVisible(true);
 
     connect(fd, SIGNAL(accepted()), SLOT(onComplete()));
-}
-
-void IODialog::addOption(QString label, QWidget* control) {
-    QGridLayout* grid = ::qobject_cast<QGridLayout*>( fd->layout() );
-    if (!grid) {
-        return;
-    }
-
-    int row = grid->rowCount();
-    grid->addWidget(new QLabel(label), row, 1);
-    grid->addWidget(control, row, 3);
 }
 
 void IODialog::hook(QObject* target, const char* slot) {

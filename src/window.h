@@ -17,7 +17,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QString openFile);
 
 signals:
 
@@ -44,8 +44,8 @@ private:
     View* view;
     AIS_InteractiveContext* context;
     Translator* translate;
-    IODialog* stepdialog;
     IODialog* gdmldialog;
+    IODialog* stepdialog;
     QListWidget* namesList;
 
     QList<SolidMetadata> metadata;

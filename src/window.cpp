@@ -15,8 +15,8 @@
 #include <AIS_InteractiveObject.hxx>
 
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent)
+MainWindow::MainWindow(QString openFile) :
+    QMainWindow(), gdmldialog(NULL), stepdialog(NULL)
 {
     setWindowTitle("STEP to GDML");
     createMenus();
@@ -29,6 +29,13 @@ MainWindow::MainWindow(QWidget *parent) :
     context = new AIS_InteractiveContext(myViewer);
     view = new View(context, this);
     connect(view, SIGNAL(selectionChanged()), SLOT(onViewSelectionChanged()));
+    if (!openFile.isEmpty()) {
+        QSignalMapper* sigmap = new QSignalMapper(this);
+        sigmap->setMapping(view, openFile);
+        connect(view, SIGNAL(readyToUse()), sigmap, SLOT(map()));
+        connect(sigmap, SIGNAL(mapped(QString)), this, SLOT(importSTEP(QString)));
+    }
+    view->setMinimumSize(QSize(150,150));
 
     translate = new Translator(context);
 
@@ -60,17 +67,22 @@ MainWindow::MainWindow(QWidget *parent) :
     rlayout->addWidget(new QLabel("Materials go here!"), 0);
     rlayout->addStretch(3);
 
-    QHBoxLayout* layout = new QHBoxLayout();
-    layout->addWidget(namesList, 1);
-    layout->addWidget(view, 3);
-    layout->addLayout(rlayout, 1);
+    QSplitter* splitter = new QSplitter(Qt::Horizontal);
+    splitter->setChildrenCollapsible(false);
 
-    QWidget* e = new QWidget();
-    e->setLayout(layout);
-    this->setCentralWidget(e);
+    splitter->addWidget(namesList);
+    splitter->setStretchFactor(0, 1);
 
-    stepdialog = NULL;
-    gdmldialog = NULL;
+    splitter->addWidget(view);
+    splitter->setStretchFactor(1, 20);
+
+    QWidget* m = new QWidget();
+    m->setLayout(rlayout);
+    splitter->addWidget(m);
+    splitter->setStretchFactor(2, 1);
+
+    this->setCentralWidget(splitter);
+
 }
 
 void MainWindow::importSTEP(QString path) {
