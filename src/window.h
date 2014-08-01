@@ -12,6 +12,10 @@ class Translator;
 class IODialog;
 
 
+class ObjectListView : public QListView {
+public:
+    ObjectListView();
+};
 
 class MainWindow : public QMainWindow
 {
@@ -31,6 +35,8 @@ private slots:
     void onViewSelectionChanged();
     void onListSelectionChanged();
 
+    void changeCurrentObject(int);
+    void currentObjectUpdated();
 private:
     void createMenus();
 
@@ -46,7 +52,12 @@ private:
     Translator* translate;
     IODialog* gdmldialog;
     IODialog* stepdialog;
+
     QListWidget* namesList;
+    QLineEdit* objName;
+    QComboBox* objMaterial;
+    QLabel* objNameLabel;
+    QLabel* objMaterialLabel;
 
     QList<SolidMetadata> metadata;
     QMap<QListWidgetItem*,int> itemsToIndices;

@@ -1,10 +1,3 @@
-#include <Standard_Version.hxx>
-#if OCC_VERSION_HEX >= 0x060503
-#define WITH_DRIVER 1
-#else
-#define WITH_DRIVER 0
-#endif
-
 #include "window.h"
 #include "view.h"
 #include "translate.h"
@@ -36,6 +29,7 @@ MainWindow::MainWindow(QString openFile) :
         connect(sigmap, SIGNAL(mapped(QString)), this, SLOT(importSTEP(QString)));
     }
     view->setMinimumSize(QSize(150,150));
+    view->setFocusPolicy(Qt::NoFocus);
 
     translate = new Translator(context);
 
@@ -44,19 +38,39 @@ MainWindow::MainWindow(QString openFile) :
     namesList->setSortingEnabled(true);
     namesList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     connect(namesList, SIGNAL(itemSelectionChanged()), SLOT(onListSelectionChanged()));
+    connect(namesList, SIGNAL(currentRowChanged(int)), SLOT(changeCurrentObject(int)));
+    namesList->setSpacing(1);
 
-    QComboBox* materials = new QComboBox();
-    materials->addItem("ALUMINUM");
+    objMaterial = new QComboBox();
+    objMaterial->addItem("ALUMINUM");
+    connect(objMaterial, SIGNAL(currentIndexChanged(int)), SLOT(currentObjectUpdated()));
+    objMaterialLabel = new QLabel("Material");
 
-    QLineEdit* name = new QLineEdit();
+    objName = new QLineEdit();
+    connect(objName, SIGNAL(textChanged(QString)), SLOT(currentObjectUpdated()));
+    objNameLabel = new QLabel("Name");
+
+    objMaterial->setDisabled(true);
+    objName->setDisabled(true);
+    objMaterialLabel->setDisabled(true);
+    objNameLabel->setDisabled(true);
+
+
+    QStandardItemModel* smi = new QStandardItemModel(2,1);
+    smi->setItem(0, new QStandardItem("TEXT"));
+    smi->setItem(1, new QStandardItem("LOG"));
+    smi->sort(0, Qt::AscendingOrder);
+    smi->setColumnCount(1);
+
+    // Layouts
 
     QGridLayout* rtlayout = new QGridLayout();
     rtlayout->setContentsMargins(3,3,3,3);
-    rtlayout->addWidget(new QLabel("Name"), 0, 0, Qt::AlignRight | Qt::AlignVCenter);
-    rtlayout->addWidget(name, 0, 2);
+    rtlayout->addWidget(objNameLabel, 0, 0, Qt::AlignRight | Qt::AlignVCenter);
+    rtlayout->addWidget(objName, 0, 2);
 
-    rtlayout->addWidget(new QLabel("Material"), 2, 0, Qt::AlignRight | Qt::AlignVCenter);
-    rtlayout->addWidget(materials, 2, 2);
+    rtlayout->addWidget(objMaterialLabel, 2, 0, Qt::AlignRight | Qt::AlignVCenter);
+    rtlayout->addWidget(objMaterial, 2, 2);
 
     rtlayout->setRowMinimumHeight(1, 5);
     rtlayout->setColumnMinimumWidth(1, 5);
@@ -160,12 +174,17 @@ void MainWindow::onViewSelectionChanged() {
 
     namesList->clearSelection();
 
+    int current = namesList->currentRow();
     for (context->InitSelected();context->MoreSelected();context->NextSelected()) {
         int idx = objectsToIndices[&(*context->Current())];
+        if (!metadata[idx].item->isSelected()) {
+            current = idx;
+        }
         metadata[idx].item->setSelected(true);
     }
-
     namesList->blockSignals(false);
+
+    namesList->setCurrentRow(current);
 }
 void MainWindow::onListSelectionChanged() {
     context->ClearSelected(false);
@@ -176,4 +195,56 @@ void MainWindow::onListSelectionChanged() {
         context->AddOrRemoveSelected(obj, false);
     }
     context->UpdateCurrentViewer();
+}
+
+void MainWindow::changeCurrentObject(int row) {
+    bool enabled = (row >= 0);
+    objMaterial->setEnabled(enabled);
+    objMaterialLabel->setEnabled(enabled);
+    objName->setEnabled(enabled);
+    objNameLabel->setEnabled(enabled);
+    if (enabled) {
+        int idx = itemsToIndices[namesList->item(row)];
+        objName->blockSignals(true);
+        objName->setText(metadata[idx].name);
+        objName->blockSignals(false);
+
+        QString mat = metadata[idx].material;
+        int mats = objMaterial->count();
+        int found = 0;
+        for (int i=0;i<mats;i++) {
+            if (mat == objMaterial->itemText(i)) {
+                found = i;
+                break;
+            }
+        }
+        objMaterial->blockSignals(true);
+        objMaterial->setCurrentIndex(found);
+        objMaterial->blockSignals(false);
+    } else {
+        objName->setText("Solid Name");
+        objMaterial->blockSignals(true);
+        objMaterial->setCurrentIndex(0);
+        objMaterial->blockSignals(false);
+    }
+
+}
+
+bool sortPairs(const QPair<int, QString*>& a, const QPair<int, QString*>& b) {
+    return *a.second < *b.second;
+}
+
+void MainWindow::currentObjectUpdated() {
+    int row = namesList->currentRow();
+    if (row == -1) {
+        return;
+    }
+
+    int idx = itemsToIndices[namesList->item(row)];
+
+    metadata[idx].name = objName->text();
+    metadata[idx].material = objMaterial->currentText();
+
+    QListWidgetItem* item = metadata[idx].item;
+    item->setText(objName->text());
 }
