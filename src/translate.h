@@ -6,6 +6,7 @@
 #include <Standard.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
+#include "metadata.h"
 
 class IODialog : public QObject {
     Q_OBJECT
@@ -33,10 +34,10 @@ class Translator: public QObject {
 public:
     Translator(const Handle(AIS_InteractiveContext) context);
     bool importSTEP(QString);
-    bool exportGDML(QString);
+    bool exportGDML(QString, const QVector<SolidMetadata>&);
 
     static bool importSTEP(QString, const Handle(TopTools_HSequenceOfShape)& );
-    static bool exportGDML(QString, const Handle(TopTools_HSequenceOfShape)& );
+    static bool exportGDML(QString, const Handle(TopTools_HSequenceOfShape)&, const QVector<SolidMetadata>& );
     static bool displayShapes(const Handle(AIS_InteractiveContext)&, const Handle(TopTools_HSequenceOfShape) &);
     static bool findAllShapes(const Handle(AIS_InteractiveContext)&, const Handle(TopTools_HSequenceOfShape) &);
     static QList<AIS_InteractiveObject*> getInteractiveObjects(const Handle(AIS_InteractiveContext)&);

@@ -138,7 +138,8 @@ bool Translator::importSTEP(QString path) {
     return displayShapes(context, shapes);
 }
 
-bool Translator::exportGDML(QString path) {
+bool Translator::exportGDML(QString path,
+                            const QVector<SolidMetadata> & metadata) {
     Handle(TopTools_HSequenceOfShape) shapes = new TopTools_HSequenceOfShape();
     // add all dem shapes
 
@@ -146,10 +147,11 @@ bool Translator::exportGDML(QString path) {
         return false;
     }
 
-    return exportGDML(path, shapes);
+    return exportGDML(path, shapes, metadata);
 }
 
-bool Translator::importSTEP(QString file, const Handle(TopTools_HSequenceOfShape)& shapes) {
+bool Translator::importSTEP(QString file,
+                            const Handle(TopTools_HSequenceOfShape)& shapes) {
     if ( shapes.IsNull())
         return false;
 
@@ -184,7 +186,9 @@ bool Translator::importSTEP(QString file, const Handle(TopTools_HSequenceOfShape
     return true;
 }
 
-bool Translator::exportGDML(QString path, const Handle(TopTools_HSequenceOfShape)& shapes) {
+bool Translator::exportGDML(QString path,
+                            const Handle(TopTools_HSequenceOfShape)& shapes,
+                            const QVector<SolidMetadata> & metadata) {
     if ( shapes.IsNull() || shapes->IsEmpty() )
         return false;
 
@@ -202,7 +206,8 @@ bool Translator::exportGDML(QString path, const Handle(TopTools_HSequenceOfShape
     gdmlWriter = new GdmlWriter(path);
     gdmlWriter->writeIntro();
     for (int i=1;i<=shapes->Length();i++) {
-        gdmlWriter->addSolid(shapes->Value(i), QString::number(i), QString("ALUMINUM"));
+        SolidMetadata& meta = metadata[i-1];
+        gdmlWriter->addSolid(shapes->Value(i), meta.name, meta.material);
     }
     gdmlWriter->writeExtro();
     delete gdmlWriter;
@@ -211,7 +216,8 @@ bool Translator::exportGDML(QString path, const Handle(TopTools_HSequenceOfShape
         GdmlWriter writer(path);
         writer.writeIntro();
         for (int i=1;i<=shapes->Length();i++) {
-            writer.addSolid(shapes->Value(i), QString::number(i), QString("ALUMINUM"));
+            const SolidMetadata& meta = metadata[i-1];
+            writer.addSolid(shapes->Value(i), meta.name, meta.material);
         }
         writer.writeExtro();
     }

@@ -14,7 +14,7 @@
 
 GdmlWriter::GdmlWriter(QString filename)
 {
-    f = fopen(filename.toLatin1().data(), "w");
+    f = fopen(filename.toUtf8().data(), "w");
     if (!f) {
         printf("FAIL\n");
         throw "FAIL";
@@ -68,7 +68,6 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
             Standard_True,
 #endif
             aMesh);
-    printf("XX %d\n", aMesh->NbTriangles());
 
     typedef struct {Standard_Integer V1;Standard_Integer V2; Standard_Integer V3;} Triangle;
 
@@ -106,12 +105,14 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
     }
     _("  </define>\n");
 
+    int num_verts = verts.size();
     verts.clear();
 
     _("  <solids>\n");
-    _("    <tessellated name=\"T-%s\">\n", name.toLatin1().data());
+    _("    <tessellated name=\"T-%s\">\n", name.toUtf8().data());
 
     idx=0;
+    int num_tris = 0;
     for (int i=1;i<=aMesh->NbDomains();i++) {
         const StlMesh_SequenceOfMeshTriangle& x = aMesh->Triangles(i);
         for (int j=1;j<=x.Length();j++) {
@@ -126,6 +127,7 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
             _("      <triangular vertex1=\"%d-%d\" vertex2=\"%d-%d\" vertex3=\"%d-%d\" type=\"ABSOLUTE\"/>\n", index, R1, index, R2, index, R3);
 
         }
+        num_tris += x.Length();
         idx += steps[i-1];
     }
     _("    </tessellated>\n");
@@ -134,6 +136,8 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
     names.append(name);
     materials.append(material);
     BRepBndLib::Add(shape, bounds);
+
+    printf("% 6d vertices, % 6d triangles <- %s\n", num_verts, num_tris, name.toUtf8().data());
 }
 
 void GdmlWriter::writeWorldBox() {
@@ -169,9 +173,9 @@ void GdmlWriter::writeStructures() {
 
     int sz = names.size();
     for (int i=0;i<sz;i++) {
-        _("    <volume name=\"V-%s\">\n",names[i].toLatin1().data());
-        _("      <materialref ref=\"%s\"/>\n", materials[i].toLatin1().data());
-        _("      <solidref ref=\"T-%s\"/>\n",names[i].toLatin1().data());
+        _("    <volume name=\"V-%s\">\n",names[i].toUtf8().data());
+        _("      <materialref ref=\"%s\"/>\n", materials[i].toUtf8().data());
+        _("      <solidref ref=\"T-%s\"/>\n",names[i].toUtf8().data());
         _("    </volume>\n");
     }
 
@@ -180,8 +184,8 @@ void GdmlWriter::writeStructures() {
     _("      <solidref ref=\"worldbox\"/>\n");
 
     for (int i=0;i<sz;i++) {
-        _("      <physvol name=\"P-%s\">\n",names[i].toLatin1().data());
-        _("        <volumeref ref=\"V-%s\"/>\n",names[i].toLatin1().data());
+        _("      <physvol name=\"P-%s\">\n",names[i].toUtf8().data());
+        _("        <volumeref ref=\"V-%s\"/>\n",names[i].toUtf8().data());
         _("        <positionref ref=\"center\"/>\n");
         _("      </physvol>\n");
     }

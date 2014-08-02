@@ -4,6 +4,7 @@
 #include <QtGui>
 #include <QtCore>
 #include "util.h"
+#include "metadata.h"
 
 class AIS_InteractiveContext;
 class AIS_InteractiveObject;
@@ -24,6 +25,7 @@ public:
     explicit MainWindow(QString openFile);
 
 signals:
+    void enableObjectEditor(bool enabled);
 
 public slots:
     void importSTEP(QString);
@@ -37,15 +39,15 @@ private slots:
 
     void changeCurrentObject(int);
     void currentObjectUpdated();
-private:
-    void createMenus();
 
-    typedef struct {
-        AIS_InteractiveObject* object;
-        QListWidgetItem* item;
-        QString name;
-        QString material;
-    } SolidMetadata;
+    void getColor();
+private:
+
+
+
+    void createInterface();
+    void createMenus();
+    SolidMetadata& currentMetadata();
 
     View* view;
     AIS_InteractiveContext* context;
@@ -56,10 +58,10 @@ private:
     QListWidget* namesList;
     QLineEdit* objName;
     QComboBox* objMaterial;
-    QLabel* objNameLabel;
-    QLabel* objMaterialLabel;
+    QSlider* objTransparency;
+    QPushButton* objColor;
 
-    QList<SolidMetadata> metadata;
+    QVector<SolidMetadata> metadata;
     QMap<QListWidgetItem*,int> itemsToIndices;
     QMap<AIS_InteractiveObject*,int> objectsToIndices;
 };
