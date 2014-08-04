@@ -3,7 +3,7 @@
 
 #include <QtGui>
 #include <QtCore>
-#include "util.h"
+#include <QSettings>
 #include "metadata.h"
 
 class AIS_InteractiveContext;
@@ -23,6 +23,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     explicit MainWindow(QString openFile);
+    virtual void closeEvent(QCloseEvent *event);
 
 signals:
     void enableObjectEditor(bool enabled);
@@ -42,9 +43,7 @@ private slots:
 
     void getColor();
 private:
-
-
-
+    void loadSettings();
     void createInterface();
     void createMenus();
     SolidMetadata& currentMetadata();
@@ -55,6 +54,7 @@ private:
     IODialog* gdmldialog;
     IODialog* stepdialog;
 
+    QSplitter* splitter;
     QListWidget* namesList;
     QLineEdit* objName;
     QComboBox* objMaterial;

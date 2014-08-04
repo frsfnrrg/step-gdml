@@ -43,6 +43,24 @@ MainWindow::MainWindow(QString openFile) :
 
     createMenus();
     createInterface();
+
+    loadSettings();
+}
+
+void MainWindow::loadSettings() {
+    QSettings settings;
+
+    this->restoreGeometry(settings.value("this-geom").toByteArray());
+    splitter->restoreState(settings.value("splitter-state").toByteArray());
+}
+
+void MainWindow::closeEvent(QCloseEvent *evt) {
+    QSettings settings;
+
+    settings.setValue("this-geom", this->saveGeometry());
+    settings.setValue("splitter-state", splitter->saveState());
+
+    QMainWindow::closeEvent(evt);
 }
 
 void MainWindow::createInterface() {
@@ -120,7 +138,7 @@ void MainWindow::createInterface() {
     rlayout->addWidget(new QLabel("Materials go here!"), 0);
     rlayout->addStretch(3);
 
-    QSplitter* splitter = new QSplitter(Qt::Horizontal);
+    splitter = new QSplitter(Qt::Horizontal);
     splitter->setChildrenCollapsible(false);
 
     splitter->addWidget(namesList);
