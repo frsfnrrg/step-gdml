@@ -17,6 +17,29 @@ QIcon makeIcon(Quantity_Color color) {
     return makeIcon(QColor::fromRgbF(color.Red(), color.Green(), color.Blue()));
 }
 
+
+
+GDMLNameValidator::GDMLNameValidator(QObject* parent, const QSet<QString>& enames) :
+    QValidator(parent), names(enames) {
+}
+QValidator::State GDMLNameValidator::validate(QString & text, int &) const {
+    // no quotes (breaks the naive exporter). Empty names are not liked
+    if (text.contains('"')) {
+        return Invalid;
+    }
+
+    if (names.contains(text) || text.isEmpty()) {
+        emit ((GDMLNameValidator*)this)->textIntermediate();
+        return Intermediate;
+    } else {
+        emit ((GDMLNameValidator*)this)->textAcceptable();
+        return Acceptable;
+    }
+}
+
+void GDMLNameValidator::fixup(QString &) const {
+}
+
 MainWindow::MainWindow(QString openFile) :
     QMainWindow(), gdmldialog(NULL), stepdialog(NULL)
 {
@@ -45,6 +68,8 @@ MainWindow::MainWindow(QString openFile) :
     createInterface();
 
     loadSettings();
+
+    current_object = -1;
 }
 
 void MainWindow::loadSettings() {
@@ -78,9 +103,13 @@ void MainWindow::createInterface() {
     QLabel* objMaterialLabel = new QLabel("Material");
 
     objName = new QLineEdit();
-    // TODO: add validation to objName, prevent name collisions,
-    // use of illegal characters like quotes, etc.
-    connect(objName, SIGNAL(textChanged(QString)), SLOT(currentObjectUpdated()));
+    validator = new GDMLNameValidator(this, names);
+    objName->setValidator(validator);
+    QSignalMapper* sigmap = new QSignalMapper(this);
+    sigmap->setMapping(validator, "QLineEdit{color: red;}");
+    connect(validator, SIGNAL(textIntermediate()), sigmap, SLOT(map()));
+    connect(sigmap, SIGNAL(mapped(QString)), objName, SLOT(setStyleSheet(QString)));
+    connect(validator, SIGNAL(textAcceptable()), SLOT(currentObjectUpdated()));
     QLabel* objNameLabel = new QLabel("Name");
 
     objTransparency = new QSlider(Qt::Horizontal);
@@ -180,6 +209,7 @@ void MainWindow::importSTEP(QString path) {
     itemsToIndices.clear();
     objectsToIndices.clear();
     namesList->clear();
+    names.clear();
 
     bool success = translate->importSTEP(path);
     printf("Success %c\n", success ? 'Y' : 'N');
@@ -202,6 +232,7 @@ void MainWindow::importSTEP(QString path) {
         itemsToIndices[sm.item] = i;
         objectsToIndices[sm.object] = i;
         namesList->addItem(sm.item);
+        names.insert(sm.name);
     }
 
     for (int i=0;i<metadata.size();i++) {
@@ -266,37 +297,50 @@ void MainWindow::onListSelectionChanged() {
 }
 
 void MainWindow::changeCurrentObject(int row) {
-    bool enabled = (row >= 0);
-    emit enableObjectEditor(enabled);
-    if (enabled) {
-        SolidMetadata &meta = currentMetadata();
-
-        objName->blockSignals(true);
-        objName->setText(meta.name);
-        objName->blockSignals(false);
-
-        objTransparency->setValue((1.0 - meta.transp) * objTransparency->maximum());
-        objColor->setIcon(makeIcon(meta.color));
-
-        QString mat = meta.material;
-        int mats = objMaterial->count();
-        int found = 0;
-        for (int i=0;i<mats;i++) {
-            if (mat == objMaterial->itemText(i)) {
-                found = i;
-                break;
-            }
+    if (row < 0) {
+        if (current_object >= 0) {
+            emit enableObjectEditor(false);
         }
-        objMaterial->blockSignals(true);
-        objMaterial->setCurrentIndex(found);
-        objMaterial->blockSignals(false);
-    } else {
-        objName->setText("Solid Name");
-        objMaterial->blockSignals(true);
-        objMaterial->setCurrentIndex(0);
-        objMaterial->blockSignals(false);
+        return;
     }
 
+    if (current_object < 0)  {
+        emit enableObjectEditor(true);
+    }
+
+    int idx = itemsToIndices[namesList->item(row)];
+    if (current_object == idx) {
+        return;
+    }
+
+    current_object = idx;
+
+    SolidMetadata &meta = currentMetadata();
+
+    names.insert(objName->text());
+    names.remove(meta.name);
+    validator->blockSignals(true);
+    objName->setText(meta.name);
+    validator->blockSignals(false);
+
+    objTransparency->blockSignals(true);
+    objTransparency->setValue((1.0 - meta.transp) * objTransparency->maximum());
+    objTransparency->blockSignals(false);
+
+    objColor->setIcon(makeIcon(meta.color));
+
+    QString mat = meta.material;
+    int mats = objMaterial->count();
+    int found = 0;
+    for (int i=0;i<mats;i++) {
+        if (mat == objMaterial->itemText(i)) {
+            found = i;
+            break;
+        }
+    }
+    objMaterial->blockSignals(true);
+    objMaterial->setCurrentIndex(found);
+    objMaterial->blockSignals(false);
 }
 
 bool sortPairs(const QPair<int, QString*>& a, const QPair<int, QString*>& b) {
@@ -304,14 +348,13 @@ bool sortPairs(const QPair<int, QString*>& a, const QPair<int, QString*>& b) {
 }
 
 void MainWindow::currentObjectUpdated() {
-    int row = namesList->currentRow();
-    if (row == -1) {
-        return;
-    }
-
+    objName->setStyleSheet("");
+    QString next = objName->text();
     SolidMetadata &meta = currentMetadata();
+    QListWidgetItem* item = meta.item;
+    meta.name = next;
+    item->setText(next);
 
-    meta.name = objName->text();
     meta.material = objMaterial->currentText();
 
     double transp = 1.0 - ((double)objTransparency->value() / (double)objTransparency->maximum());
@@ -319,9 +362,6 @@ void MainWindow::currentObjectUpdated() {
         meta.transp = transp;
         context->SetTransparency(meta.object, meta.transp, true);
     }
-
-    QListWidgetItem* item = meta.item;
-    item->setText(objName->text());
 }
 
 void MainWindow::getColor() {
@@ -343,3 +383,4 @@ SolidMetadata& MainWindow::currentMetadata() {
     int idx = itemsToIndices[namesList->item(row)];
     return metadata[idx];
 }
+

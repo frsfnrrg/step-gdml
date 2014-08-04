@@ -13,9 +13,17 @@ class Translator;
 class IODialog;
 
 
-class ObjectListView : public QListView {
+class GDMLNameValidator : public QValidator {
+    Q_OBJECT
 public:
-    ObjectListView();
+    GDMLNameValidator(QObject* parent, const QSet<QString>& enames);
+    virtual State validate(QString & text, int &) const;
+    virtual void fixup(QString & text) const;
+signals:
+    void textAcceptable();
+    void textIntermediate();
+private:
+    const QSet<QString>& names;
 };
 
 class MainWindow : public QMainWindow
@@ -54,6 +62,7 @@ private:
     IODialog* gdmldialog;
     IODialog* stepdialog;
 
+    GDMLNameValidator* validator;
     QSplitter* splitter;
     QListWidget* namesList;
     QLineEdit* objName;
@@ -64,6 +73,8 @@ private:
     QVector<SolidMetadata> metadata;
     QMap<QListWidgetItem*,int> itemsToIndices;
     QMap<AIS_InteractiveObject*,int> objectsToIndices;
+    QSet<QString> names;
+    int current_object;
 };
 
 
