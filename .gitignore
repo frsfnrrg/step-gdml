@@ -10,3 +10,4 @@ Makefile*
 build
 callgrind*
 *.orig
+*.kate-swp
