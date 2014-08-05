@@ -1,29 +1,15 @@
-When in doubt, read the source.
+# Step-gdml
 
-# visual.py
+A project to convert STEP files to GDML files in a clean and fast fashion.
+Requires OpenCASCADE (tested with 6.50, 6.71) and Qt 4 (tested with 4.8.4).
 
-Requires pythonOCC (http://www.pythonocc.org/).
-QT should be available and integrated with pyOCC.
+To build:
 
-Tested with:
-*   pythonOCC: v 0.8.0 (opensuse), really 0.6dev.
+Run:
+> qmake step-gdml.pro
+> make
 
-Very in progress.
+Errors may occur if $CASROOT can not be found. Either set it to
+the root location of OpenCASCADE or edit step-gdml.pro.
 
-# step-gdml.py
-
-Requires FreeCAD (http://freecadweb.org/).
-
-Tested with:
-*   FreeCAD 0.14 Revision: 3702
-*   FreeCAD 0.12 Revision: 5382
-
-Should work with all versions in between.
-
-Because FreeCAD may not be in your python import
-search path by default, you need to provide a path
-as a command line argument. If the executable is
-in "path/to/FreeCAD/bin/FreeCAD", just use the lib
-folder "path/to/FreeCAD/lib". It should work.
-
-Largely complete.
+Note: project still relies on a shim from Geant4 IESample.
