@@ -1,0 +1,14 @@
+--mode=c
+
+--convert-tabs
+--indent=spaces
+
+--align-pointer=type
+
+--unpad-paren
+--pad-oper
+--pad-header
+
+
+--style=linux
+--add-brackets

@@ -22,7 +22,7 @@ private:
     void writeStructures();
     void writeWorldBox();
 
-    FILE* f=NULL;
+    FILE* f = NULL;
     QList<QString> names;
     QList<QString> materials;
     Bnd_Box bounds;

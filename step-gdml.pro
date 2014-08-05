@@ -20,6 +20,8 @@ SOURCES = src/main.cpp \
     src/translate.cpp \
     src/gdmlwriter.cpp
 
+OTHER_FILES=.astylerc
+
 DESTDIR = .
 OBJECTS_DIR = ./build/obj
 MOC_DIR = ./build/moc

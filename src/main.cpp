@@ -5,7 +5,8 @@
 #include "translate.h"
 #include "stdio.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     QApplication app(argc, argv);
     app.setApplicationName("STEP-GDML");
     QStringList args = app.arguments();
@@ -27,7 +28,7 @@ int main(int argc, char** argv) {
             return -1;
         }
         QVector<SolidMetadata> metadata(shapes->Length());
-        for (int i=0;i<metadata.size();i++) {
+        for (int i = 0; i < metadata.size(); i++) {
             metadata[i].color = Quantity_Color();
             metadata[i].item = 0;
             metadata[i].object = 0;

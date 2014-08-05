@@ -13,12 +13,13 @@ class Translator;
 class IODialog;
 
 
-class GDMLNameValidator : public QValidator {
+class GDMLNameValidator : public QValidator
+{
     Q_OBJECT
 public:
     GDMLNameValidator(QObject* parent, const QSet<QString>& enames);
-    virtual State validate(QString & text, int &) const;
-    virtual void fixup(QString & text) const;
+    virtual State validate(QString& text, int&) const;
+    virtual void fixup(QString& text) const;
 signals:
     void textAcceptable();
     void textIntermediate();
@@ -31,7 +32,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     explicit MainWindow(QString openFile);
-    virtual void closeEvent(QCloseEvent *event);
+    virtual void closeEvent(QCloseEvent* event);
 
 signals:
     void enableObjectEditor(bool enabled);
@@ -71,8 +72,8 @@ private:
     QPushButton* objColor;
 
     QVector<SolidMetadata> metadata;
-    QMap<QListWidgetItem*,int> itemsToIndices;
-    QMap<AIS_InteractiveObject*,int> objectsToIndices;
+    QMap<QListWidgetItem*, int> itemsToIndices;
+    QMap<AIS_InteractiveObject*, int> objectsToIndices;
     QSet<QString> names;
     int current_object;
 };

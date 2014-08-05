@@ -23,13 +23,15 @@ GdmlWriter::GdmlWriter(QString filename)
     bounds = Bnd_Box();
 }
 
-GdmlWriter::~GdmlWriter() {
+GdmlWriter::~GdmlWriter()
+{
     fclose(f);
 }
 
 #define _(...) fprintf (f, __VA_ARGS__)
 
-void GdmlWriter::writeMaterials() {
+void GdmlWriter::writeMaterials()
+{
     _("  <materials>\n");
     _("    <material Z=\"13\" name=\"ALUMINUM\">\n");
     _("      <atom unit=\"g/mole\" value=\"26.9815385\"/>\n");
@@ -42,14 +44,16 @@ void GdmlWriter::writeMaterials() {
     _("  </materials>\n");
 }
 
-void GdmlWriter::writeIntro() {
+void GdmlWriter::writeIntro()
+{
     _("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
     _("<gdml xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"http://service-spi.web.cern.ch/service-spi/app/releases/GDML/GDML_3_0_0/schema/gdml.xsd\" >");
 
     writeMaterials();
 }
 
-bool operator <(const gp_XYZ& a, const gp_XYZ& b) {
+bool operator <(const gp_XYZ& a, const gp_XYZ& b)
+{
     if (a.X() == b.X()) {
         if (a.Y() == b.Y()) {
             return a.Z() < b.Z();
@@ -59,17 +63,22 @@ bool operator <(const gp_XYZ& a, const gp_XYZ& b) {
     return a.X() < b.X();
 }
 
-void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
+void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
+{
     Handle_StlMesh_Mesh aMesh = new StlMesh_Mesh();
     int index = names.size();
 
     StlTransfer::BuildIncrementalMesh(shape, 1.0,
 #if OCC_VERSION_HEX >= 0x060503
-            Standard_True,
+                                      Standard_True,
 #endif
-            aMesh);
+                                      aMesh);
 
-    typedef struct {Standard_Integer V1;Standard_Integer V2; Standard_Integer V3;} Triangle;
+    typedef struct {
+        Standard_Integer V1;
+        Standard_Integer V2;
+        Standard_Integer V3;
+    } Triangle;
 
     QList<gp_XYZ> verts;
     QMap<gp_XYZ, int> dedup;
@@ -77,10 +86,10 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
 
     QList<int> triconv;
 
-    int idx=0;
-    for (int i=1;i<=aMesh->NbDomains();i++) {
+    int idx = 0;
+    for (int i = 1; i <= aMesh->NbDomains(); i++) {
         const TColgp_SequenceOfXYZ& seq = aMesh->Vertices(i);
-        for (int j=1;j<=seq.Length();j++) {
+        for (int j = 1; j <= seq.Length(); j++) {
             const gp_XYZ& pt = seq.Value(j);
 
             int val = dedup.value(pt, -1);
@@ -100,7 +109,7 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
 
     _("  <define>\n");
     int numverts = verts.size();
-    for (int i=0;i<numverts;i++) {
+    for (int i = 0; i < numverts; i++) {
         _("    <position name=\"%d-%d\" x=\"%f\" y=\"%f\" z=\"%f\" unit=\"mm\"/>\n", index, i, verts[i].X(), verts[i].Y(), verts[i].Z());
     }
     _("  </define>\n");
@@ -111,24 +120,24 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
     _("  <solids>\n");
     _("    <tessellated name=\"T-%s\">\n", name.toUtf8().data());
 
-    idx=0;
+    idx = 0;
     int num_tris = 0;
-    for (int i=1;i<=aMesh->NbDomains();i++) {
+    for (int i = 1; i <= aMesh->NbDomains(); i++) {
         const StlMesh_SequenceOfMeshTriangle& x = aMesh->Triangles(i);
-        for (int j=1;j<=x.Length();j++) {
-            int V1,V2,V3;
-            x.Value(j)->GetVertex(V1,V2,V3);
+        for (int j = 1; j <= x.Length(); j++) {
+            int V1, V2, V3;
+            x.Value(j)->GetVertex(V1, V2, V3);
 
-            int R1,R2,R3;
-            R1 = triconv[V1+idx-1];
-            R2 = triconv[V2+idx-1];
-            R3 = triconv[V3+idx-1];
+            int R1, R2, R3;
+            R1 = triconv[V1 + idx - 1];
+            R2 = triconv[V2 + idx - 1];
+            R3 = triconv[V3 + idx - 1];
 
             _("      <triangular vertex1=\"%d-%d\" vertex2=\"%d-%d\" vertex3=\"%d-%d\" type=\"ABSOLUTE\"/>\n", index, R1, index, R2, index, R3);
 
         }
         num_tris += x.Length();
-        idx += steps[i-1];
+        idx += steps[i - 1];
     }
     _("    </tessellated>\n");
     _("  </solids>\n");
@@ -140,7 +149,8 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material) {
     printf("% 6d vertices, % 6d triangles <- %s\n", num_verts, num_tris, name.toUtf8().data());
 }
 
-void GdmlWriter::writeWorldBox() {
+void GdmlWriter::writeWorldBox()
+{
     const Standard_Real buffer = 5.0;
     Standard_Real xMin, xMax, yMin, yMax, zMin, zMax;
     bounds.Get(xMin, yMin, zMin, xMax, yMax, zMax);
@@ -151,7 +161,7 @@ void GdmlWriter::writeWorldBox() {
     yMax += buffer;
     zMax += buffer;
 
-    double cx,cy,cz,sx,sy,sz;
+    double cx, cy, cz, sx, sy, sz;
     cx = (xMin + xMax) / 2;
     cy = (yMin + yMax) / 2;
     cz = (zMin + zMax) / 2;
@@ -168,14 +178,15 @@ void GdmlWriter::writeWorldBox() {
     _("  </solids>\n");
 }
 
-void GdmlWriter::writeStructures() {
+void GdmlWriter::writeStructures()
+{
     _("  <structure>\n");
 
     int sz = names.size();
-    for (int i=0;i<sz;i++) {
-        _("    <volume name=\"V-%s\">\n",names[i].toUtf8().data());
+    for (int i = 0; i < sz; i++) {
+        _("    <volume name=\"V-%s\">\n", names[i].toUtf8().data());
         _("      <materialref ref=\"%s\"/>\n", materials[i].toUtf8().data());
-        _("      <solidref ref=\"T-%s\"/>\n",names[i].toUtf8().data());
+        _("      <solidref ref=\"T-%s\"/>\n", names[i].toUtf8().data());
         _("    </volume>\n");
     }
 
@@ -183,9 +194,9 @@ void GdmlWriter::writeStructures() {
     _("      <materialref ref=\"VACUUM\"/>\n");
     _("      <solidref ref=\"worldbox\"/>\n");
 
-    for (int i=0;i<sz;i++) {
-        _("      <physvol name=\"P-%s\">\n",names[i].toUtf8().data());
-        _("        <volumeref ref=\"V-%s\"/>\n",names[i].toUtf8().data());
+    for (int i = 0; i < sz; i++) {
+        _("      <physvol name=\"P-%s\">\n", names[i].toUtf8().data());
+        _("        <volumeref ref=\"V-%s\"/>\n", names[i].toUtf8().data());
         _("        <positionref ref=\"center\"/>\n");
         _("      </physvol>\n");
     }
@@ -195,13 +206,15 @@ void GdmlWriter::writeStructures() {
     _("  </structure>\n");
 }
 
-void GdmlWriter::writeSetup() {
+void GdmlWriter::writeSetup()
+{
     _("  <setup name=\"Default\" version=\"1.0\">\n");
     _("    <world ref=\"World\"/>\n");
     _("  </setup>\n");
 }
 
-void GdmlWriter::writeExtro() {
+void GdmlWriter::writeExtro()
+{
     writeWorldBox();
     writeStructures();
     writeSetup();

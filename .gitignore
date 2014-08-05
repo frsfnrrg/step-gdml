@@ -6,6 +6,7 @@ step-gdml
 *.pyc
 *.xz
 Makefile*
-*.pro.user
+*.pro.user*
 build
 callgrind*
+*.orig
