@@ -152,7 +152,6 @@ void Viewer::mousePressEvent(QMouseEvent* evt)
         buttonMode->release(data);
     }
     buttonMode = getButtonAction(evt->button(), evt->modifiers());
-    qDebug(buttonMode->getName().toUtf8().data());
     setCursor(buttonMode->getCursor());
     buttonMode->click(data);
     emit selectionMightBeChanged();
@@ -175,6 +174,10 @@ void Viewer::mouseMoveEvent(QMouseEvent* evt)
     if (buttonMode) {
         buttonMode->drag(getViewActionData(evt));
         emit selectionMightBeChanged();
+    } else {
+        buttonMode = getButtonAction(Qt::NoButton, evt->modifiers());
+        setCursor(buttonMode->getCursor());
+        buttonMode->click(getViewActionData(evt));
     }
 }
 void Viewer::mouseDoubleClickEvent(QMouseEvent*)
@@ -183,7 +186,6 @@ void Viewer::mouseDoubleClickEvent(QMouseEvent*)
 void Viewer::wheelEvent(QWheelEvent* evt)
 {
     scrollMode = getScrollAction(evt->modifiers());
-    qDebug(scrollMode->getName().toUtf8().data());
     scrollMode->scroll(&(*view), evt->delta());
 }
 
