@@ -297,7 +297,11 @@ public:
     }
 } ScrPanStepH;
 
-MouseMode* modeConfig[5][4] = {
+#undef COLOR_IMPL
+#undef NAME_IMPL
+#undef CURSOR_IMPL
+
+MouseMode* const defaultConfig[5][4] = {
     {
         &ClkSelect,
         &ClkSelectToggle,
@@ -330,7 +334,9 @@ MouseMode* modeConfig[5][4] = {
     }
 };
 
-MouseScrollMode* allScrollModes[] = {
+MouseMode* modeConfig[5][4];
+
+MouseScrollMode* const allScrollModes[] = {
     &ScrZoom,
     &ScrZoomInv,
 
@@ -340,7 +346,7 @@ MouseScrollMode* allScrollModes[] = {
     &ScrNone
 };
 
-MouseButtonMode* allButtonModes[] = {
+MouseButtonMode* const allButtonModes[] = {
 
     &ClkPopup,
 
@@ -463,8 +469,23 @@ HelpDialog::HelpDialog(QWidget* parent) :
 
     setWindowTitle("Step-Gdml Help");
 
+    QPushButton* resetButton = new QPushButton("Reset");
+    resetButton->setStyleSheet("QPushButton{font:bold;color:orange;background:black}");
+    connect(resetButton, SIGNAL(clicked()), SLOT(resetConfig()));
+    QPushButton* closeButton = new QPushButton("Close");
+    connect(closeButton, SIGNAL(clicked()), SLOT(hide()));
+
+    QHBoxLayout* hlayout = new QHBoxLayout();
+    hlayout->addWidget(resetButton);
+    hlayout->addStretch(5);
+    hlayout->addWidget(closeButton);
+
+
     QVBoxLayout* layout = new QVBoxLayout();
     layout->addWidget(table);
+    layout->addSpacing(4);
+    layout->addLayout(hlayout);
+
     setLayout(layout);
     resize(sizeHint());
 }
@@ -533,6 +554,63 @@ void HelpDialog::clearPopup()
     table->setCellWidget(lastRow, lastCol, makeLabel(modeConfig[lastRow][lastCol]));
 }
 
-#undef COLOR_IMPL
-#undef NAME_IMPL
-#undef CURSOR_IMPL
+void HelpDialog::loadConfig()
+{
+    QSettings s;
+    if (s.contains("view-actions")) {
+        QByteArray array = s.value("view-actions").toByteArray();
+        int y;
+        for (y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                modeConfig[y][x] = allButtonModes[array[y * 4 + x]];
+            }
+        }
+        for (int x = 0; x < 4; x++) {
+            modeConfig[y][x] = allScrollModes[array[y * 4 + x]];
+        }
+    } else {
+        for (int y = 0; y < 5; y++) {
+            for (int x = 0; x < 4; x++) {
+                modeConfig[y][x] = defaultConfig[y][x];
+            }
+        }
+    }
+}
+
+unsigned findIndex(void* arr[], void* target, unsigned len)
+{
+    for (unsigned i = 0; i < len; i++) {
+        if (target == arr[i]) {
+            return i;
+        }
+    }
+    qFatal("Oughta find it.");
+}
+
+void HelpDialog::saveConfig()
+{
+    QSettings s;
+    QByteArray array(20, 0);
+    int y;
+    for (y = 0; y < 4; y++) {
+        for (int x = 0; x < 4; x++) {
+            array[y * 4 + x] = findIndex((void**)allButtonModes, modeConfig[y][x],
+                                         sizeof(allButtonModes) / sizeof(allButtonModes[0]));
+        }
+    }
+    for (int x = 0; x < 4; x++) {
+        array[y * 4 + x] = findIndex((void**)allScrollModes, modeConfig[y][x],
+                                     sizeof(allScrollModes) / sizeof(allScrollModes[0]));
+    }
+    s.setValue("view-actions", array);
+}
+
+void HelpDialog::resetConfig()
+{
+    for (int y = 0; y < 5; y++) {
+        for (int x = 0; x < 4; x++) {
+            modeConfig[y][x] = defaultConfig[y][x];
+            table->setCellWidget(y, x, makeLabel(modeConfig[y][x]));
+        }
+    }
+}

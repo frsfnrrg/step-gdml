@@ -10,7 +10,8 @@
 class V3d_View;
 class ViewActionData;
 
-class MouseMode {
+class MouseMode
+{
 public:
     MouseMode() {}
     virtual QString getName() = 0;
@@ -40,7 +41,8 @@ private:
     void operator=(const MouseScrollMode&);
 };
 
-class OrientationMapper : public QObject {
+class OrientationMapper : public QObject
+{
     Q_OBJECT
 public:
     OrientationMapper(QObject*, QObject*, V3d_TypeOfOrientation);
@@ -53,10 +55,11 @@ private:
 };
 
 MouseButtonMode* getButtonAction(Qt::MouseButton button,
-                          Qt::KeyboardModifiers modifiers);
+                                 Qt::KeyboardModifiers modifiers);
 MouseScrollMode* getScrollAction(Qt::KeyboardModifiers modifiers);
 
-class ModeComboBox : public QComboBox {
+class ModeComboBox : public QComboBox
+{
     Q_OBJECT
 public:
     ModeComboBox();
@@ -76,10 +79,11 @@ class HelpDialog : public QDialog
 public:
     explicit HelpDialog(QWidget* parent = 0);
 
-
-signals:
+    static void loadConfig();
+    static void saveConfig();
 
 public slots:
+    void resetConfig();
     void editCell(int, int);
     void changeItem();
     void clearPopup();

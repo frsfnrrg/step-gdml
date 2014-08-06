@@ -22,7 +22,8 @@ QIcon makeIcon(Quantity_Color color)
 
 
 
-GDMLNameValidator::GDMLNameValidator(QObject* parent, const QSet<QString>& enames) :
+GDMLNameValidator::GDMLNameValidator(QObject* parent,
+                                     const QSet<QString>& enames) :
     QValidator(parent), names(enames)
 {
 }
@@ -51,13 +52,16 @@ MainWindow::MainWindow(QString openFile) :
 {
     setWindowTitle("STEP to GDML");
 
+    HelpDialog::loadConfig();
+
     V3d_Viewer* v = Viewer::makeViewer();
     context = new AIS_InteractiveContext(v);
     // SetDefaultLights must be called after a context is made
     v->SetDefaultLights();
 
     view = new Viewer(context, this);
-    connect(view, SIGNAL(selectionMightBeChanged()), SLOT(onViewSelectionChanged()));
+    connect(view, SIGNAL(selectionMightBeChanged()),
+            SLOT(onViewSelectionChanged()));
     if (!openFile.isEmpty()) {
         QSignalMapper* sigmap = new QSignalMapper(this);
         sigmap->setMapping(view, openFile);
@@ -90,6 +94,8 @@ void MainWindow::closeEvent(QCloseEvent* evt)
     settings.setValue("this-geom", this->saveGeometry());
     settings.setValue("splitter-state", splitter->saveState());
 
+    HelpDialog::saveConfig();
+
     QMainWindow::closeEvent(evt);
 }
 
@@ -100,12 +106,15 @@ void MainWindow::createInterface()
     namesList->setSortingEnabled(true);
     namesList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     namesList->setSpacing(1);
-    connect(namesList, SIGNAL(itemSelectionChanged()), SLOT(onListSelectionChanged()));
-    connect(namesList, SIGNAL(currentRowChanged(int)), SLOT(changeCurrentObject(int)));
+    connect(namesList, SIGNAL(itemSelectionChanged()),
+            SLOT(onListSelectionChanged()));
+    connect(namesList, SIGNAL(currentRowChanged(int)),
+            SLOT(changeCurrentObject(int)));
 
     objMaterial = new QComboBox();
     objMaterial->addItems(QStringList() << "ALUMINUM" << "STEEL");
-    connect(objMaterial, SIGNAL(currentIndexChanged(int)), SLOT(currentObjectUpdated()));
+    connect(objMaterial, SIGNAL(currentIndexChanged(int)),
+            SLOT(currentObjectUpdated()));
     QLabel* objMaterialLabel = new QLabel("Material");
 
     objName = new QLineEdit();
@@ -122,21 +131,31 @@ void MainWindow::createInterface()
     objTransparency->setRange(0, 100);
     objTransparency->setPageStep(20);
     objTransparency->setSingleStep(5);
-    connect(objTransparency, SIGNAL(sliderMoved(int)), SLOT(currentObjectUpdated()));
+    connect(objTransparency, SIGNAL(sliderMoved(int)),
+            SLOT(currentObjectUpdated()));
     QLabel* objTransparencyLabel = new QLabel("Alpha");
 
-    objColor = new QPushButton(makeIcon(Quantity_Color(context->DefaultColor())), "");
+    objColor = new QPushButton(makeIcon(Quantity_Color(context->DefaultColor())),
+                               "");
     connect(objColor, SIGNAL(clicked()), this, SLOT(getColor()));
     QLabel* objColorLabel = new QLabel("Color");
 
-    connect(this, SIGNAL(enableObjectEditor(bool)), objMaterial, SLOT(setEnabled(bool)));
-    connect(this, SIGNAL(enableObjectEditor(bool)), objMaterialLabel, SLOT(setEnabled(bool)));
-    connect(this, SIGNAL(enableObjectEditor(bool)), objName, SLOT(setEnabled(bool)));
-    connect(this, SIGNAL(enableObjectEditor(bool)), objNameLabel, SLOT(setEnabled(bool)));
-    connect(this, SIGNAL(enableObjectEditor(bool)), objTransparency, SLOT(setEnabled(bool)));
-    connect(this, SIGNAL(enableObjectEditor(bool)), objTransparencyLabel, SLOT(setEnabled(bool)));
-    connect(this, SIGNAL(enableObjectEditor(bool)), objColor, SLOT(setEnabled(bool)));
-    connect(this, SIGNAL(enableObjectEditor(bool)), objColorLabel, SLOT(setEnabled(bool)));
+    connect(this, SIGNAL(enableObjectEditor(bool)), objMaterial,
+            SLOT(setEnabled(bool)));
+    connect(this, SIGNAL(enableObjectEditor(bool)), objMaterialLabel,
+            SLOT(setEnabled(bool)));
+    connect(this, SIGNAL(enableObjectEditor(bool)), objName,
+            SLOT(setEnabled(bool)));
+    connect(this, SIGNAL(enableObjectEditor(bool)), objNameLabel,
+            SLOT(setEnabled(bool)));
+    connect(this, SIGNAL(enableObjectEditor(bool)), objTransparency,
+            SLOT(setEnabled(bool)));
+    connect(this, SIGNAL(enableObjectEditor(bool)), objTransparencyLabel,
+            SLOT(setEnabled(bool)));
+    connect(this, SIGNAL(enableObjectEditor(bool)), objColor,
+            SLOT(setEnabled(bool)));
+    connect(this, SIGNAL(enableObjectEditor(bool)), objColorLabel,
+            SLOT(setEnabled(bool)));
 
     emit enableObjectEditor(false);
 
@@ -156,7 +175,8 @@ void MainWindow::createInterface()
     rtlayout->addWidget(objMaterialLabel, 2, 0, Qt::AlignRight | Qt::AlignVCenter);
     rtlayout->addWidget(objMaterial, 2, 2);
 
-    rtlayout->addWidget(objTransparencyLabel, 4, 0, Qt::AlignRight | Qt::AlignVCenter);
+    rtlayout->addWidget(objTransparencyLabel, 4, 0,
+                        Qt::AlignRight | Qt::AlignVCenter);
     rtlayout->addWidget(objTransparency, 4, 2);
 
     rtlayout->addWidget(objColorLabel, 6, 0, Qt::AlignRight | Qt::AlignVCenter);
@@ -194,7 +214,8 @@ void MainWindow::createInterface()
 void MainWindow::createMenus()
 {
     QAction* quit = mkAction(this, "Quit", "Ctrl+Q", SLOT(close()));
-    QAction* load = mkAction(this, "Load STEP file...", "Ctrl+O", SLOT(raiseSTEP()));
+    QAction* load = mkAction(this, "Load STEP file...", "Ctrl+O",
+                             SLOT(raiseSTEP()));
     QAction* expo = mkAction(this, "Export GDML file", "Ctrl+E", SLOT(raiseGDML()));
     QAction* help = mkAction(this, "Help", "", SLOT(raiseHelp()));
 
@@ -223,7 +244,8 @@ void MainWindow::importSTEP(QString path)
 
     bool success = translate->importSTEP(path);
     qDebug("Success %c", success ? 'Y' : 'N');
-    QList<AIS_InteractiveObject*> objects = Translator::getInteractiveObjects(context);
+    QList<AIS_InteractiveObject*> objects = Translator::getInteractiveObjects(
+            context);
 
     Quantity_NameOfColor color = context->DefaultColor();
 
@@ -266,7 +288,8 @@ void MainWindow::exportGDML(QString path)
 void MainWindow::raiseSTEP()
 {
     if (!stepdialog) {
-        stepdialog = new IODialog(this, QFileDialog::AcceptOpen, QStringList("Step Files (*.stp *.step)"), "stp");
+        stepdialog = new IODialog(this, QFileDialog::AcceptOpen,
+                                  QStringList("Step Files (*.stp *.step)"), "stp");
         stepdialog->hook(this, SLOT(importSTEP(QString)));
     }
     stepdialog->display();
@@ -275,13 +298,15 @@ void MainWindow::raiseSTEP()
 void MainWindow::raiseGDML()
 {
     if (!gdmldialog) {
-        gdmldialog = new IODialog(this, QFileDialog::AcceptSave, QStringList("GDML Files (*.gdml)"), "gdml");
+        gdmldialog = new IODialog(this, QFileDialog::AcceptSave,
+                                  QStringList("GDML Files (*.gdml)"), "gdml");
         gdmldialog->hook(this, SLOT(exportGDML(QString)));
     }
     gdmldialog->display();
 }
 
-void MainWindow::raiseHelp() {
+void MainWindow::raiseHelp()
+{
     if (!helpdialog) {
         helpdialog = new HelpDialog(this);
     }
@@ -296,7 +321,8 @@ void MainWindow::onViewSelectionChanged()
     namesList->clearSelection();
 
     QListWidgetItem* current = 0;//namesList->currentItem();
-    for (context->InitSelected(); context->MoreSelected(); context->NextSelected()) {
+    for (context->InitSelected(); context->MoreSelected();
+         context->NextSelected()) {
         int idx = objectsToIndices[&(*context->Current())];
         if (!metadata[idx].item->isSelected()) {
             current = metadata[idx].item;
@@ -398,7 +424,8 @@ void MainWindow::currentObjectUpdated()
 
     meta.material = objMaterial->currentText();
 
-    double transp = 1.0 - ((double)objTransparency->value() / (double)objTransparency->maximum());
+    double transp = 1.0 - ((double)objTransparency->value() /
+                           (double)objTransparency->maximum());
     if (transp != meta.transp) {
         meta.transp = transp;
         context->SetTransparency(meta.object, meta.transp, true);
