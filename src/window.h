@@ -8,10 +8,10 @@
 
 class AIS_InteractiveContext;
 class AIS_InteractiveObject;
-class View;
+class Viewer;
 class Translator;
 class IODialog;
-
+class HelpDialog;
 
 class GDMLNameValidator : public QValidator
 {
@@ -40,8 +40,10 @@ signals:
 public slots:
     void importSTEP(QString);
     void exportGDML(QString);
+
     void raiseSTEP();
     void raiseGDML();
+    void raiseHelp();
 
 private slots:
     void onViewSelectionChanged();
@@ -57,11 +59,12 @@ private:
     void createMenus();
     SolidMetadata& currentMetadata();
 
-    View* view;
+    Viewer* view;
     AIS_InteractiveContext* context;
     Translator* translate;
     IODialog* gdmldialog;
     IODialog* stepdialog;
+    HelpDialog* helpdialog;
 
     GDMLNameValidator* validator;
     QSplitter* splitter;

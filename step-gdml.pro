@@ -9,16 +9,18 @@ TARGET = step-gdml
 
 HEADERS = src/util.h \
     src/window.h \
-    src/view.h \
     src/translate.h \
     src/gdmlwriter.h \
-    src/metadata.h
+    src/metadata.h \
+    src/helpdialog.h \
+    src/viewer.h
 SOURCES = src/main.cpp \
     src/util.cpp \
     src/window.cpp \
-    src/view.cpp \
     src/translate.cpp \
-    src/gdmlwriter.cpp
+    src/gdmlwriter.cpp \
+    src/helpdialog.cpp \
+    src/viewer.cpp
 
 OTHER_FILES=.astylerc
 

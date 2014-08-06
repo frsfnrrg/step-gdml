@@ -1,7 +1,8 @@
 #include "window.h"
-#include "view.h"
+#include "viewer.h"
 #include "translate.h"
 #include "util.h"
+#include "helpdialog.h"
 #include <cstdio>
 #include <V3d_Viewer.hxx>
 #include <V3d_View.hxx>
@@ -46,26 +47,23 @@ void GDMLNameValidator::fixup(QString&) const
 }
 
 MainWindow::MainWindow(QString openFile) :
-    QMainWindow(), gdmldialog(NULL), stepdialog(NULL)
+    QMainWindow(), gdmldialog(NULL), stepdialog(NULL), helpdialog(NULL)
 {
     setWindowTitle("STEP to GDML");
 
-    Handle(V3d_Viewer) myViewer = View::makeViewer();
+    V3d_Viewer* v = Viewer::makeViewer();
+    context = new AIS_InteractiveContext(v);
+    // SetDefaultLights must be called after a context is made
+    v->SetDefaultLights();
 
-    myViewer->SetDefaultLights();
-    myViewer->SetLightOn();
-
-    context = new AIS_InteractiveContext(myViewer);
-    view = new View(context, this);
-    connect(view, SIGNAL(selectionChanged()), SLOT(onViewSelectionChanged()));
+    view = new Viewer(context, this);
+    connect(view, SIGNAL(selectionMightBeChanged()), SLOT(onViewSelectionChanged()));
     if (!openFile.isEmpty()) {
         QSignalMapper* sigmap = new QSignalMapper(this);
         sigmap->setMapping(view, openFile);
         connect(view, SIGNAL(readyToUse()), sigmap, SLOT(map()));
         connect(sigmap, SIGNAL(mapped(QString)), this, SLOT(importSTEP(QString)));
     }
-    view->setMinimumSize(QSize(150, 150));
-    view->setFocusPolicy(Qt::NoFocus);
 
     translate = new Translator(context);
 
@@ -196,23 +194,25 @@ void MainWindow::createInterface()
 void MainWindow::createMenus()
 {
     QAction* quit = mkAction(this, "Quit", "Ctrl+Q", SLOT(close()));
-
     QAction* load = mkAction(this, "Load STEP file...", "Ctrl+O", SLOT(raiseSTEP()));
-
     QAction* expo = mkAction(this, "Export GDML file", "Ctrl+E", SLOT(raiseGDML()));
+    QAction* help = mkAction(this, "Help", "", SLOT(raiseHelp()));
 
     QMenu* fileMenu = new QMenu("File", this);
     fileMenu->addAction(load);
     fileMenu->addAction(expo);
     fileMenu->addSeparator();
     fileMenu->addAction(quit);
-
     this->menuBar()->addMenu(fileMenu);
+
+    QMenu* helpMenu = new QMenu("Help", this);
+    helpMenu->addAction(help);
+    this->menuBar()->addMenu(helpMenu);
 }
 
 void MainWindow::importSTEP(QString path)
 {
-    printf("Importing file %s\n", path.toUtf8().data());
+    qDebug("Importing file %s", path.toUtf8().data());
 
     context->RemoveAll(true);
     metadata.clear();
@@ -222,7 +222,7 @@ void MainWindow::importSTEP(QString path)
     names.clear();
 
     bool success = translate->importSTEP(path);
-    printf("Success %c\n", success ? 'Y' : 'N');
+    qDebug("Success %c", success ? 'Y' : 'N');
     QList<AIS_InteractiveObject*> objects = Translator::getInteractiveObjects(context);
 
     Quantity_NameOfColor color = context->DefaultColor();
@@ -241,7 +241,9 @@ void MainWindow::importSTEP(QString path)
         metadata.append(sm);
         itemsToIndices[sm.item] = i;
         objectsToIndices[sm.object] = i;
+        namesList->blockSignals(true);
         namesList->addItem(sm.item);
+        namesList->blockSignals(false);
         names.insert(sm.name);
     }
 
@@ -251,15 +253,14 @@ void MainWindow::importSTEP(QString path)
         context->SetTransparency(m.object, m.transp, false);
     }
 
-    view->fitAll();
+    view->resetView();
 }
-
 
 void MainWindow::exportGDML(QString path)
 {
-    printf("Exporting file %s\n", path.toUtf8().data());
+    qDebug("Exporting file %s", path.toUtf8().data());
     bool success = translate->exportGDML(path, metadata);
-    printf("Success %c\n", success ? 'Y' : 'N');
+    qDebug("Success %c", success ? 'Y' : 'N');
 }
 
 void MainWindow::raiseSTEP()
@@ -280,6 +281,13 @@ void MainWindow::raiseGDML()
     gdmldialog->display();
 }
 
+void MainWindow::raiseHelp() {
+    if (!helpdialog) {
+        helpdialog = new HelpDialog(this);
+    }
+    helpdialog->show();
+    helpdialog->raise();
+}
 
 void MainWindow::onViewSelectionChanged()
 {
@@ -287,17 +295,27 @@ void MainWindow::onViewSelectionChanged()
 
     namesList->clearSelection();
 
-    int current = namesList->currentRow();
+    QListWidgetItem* current = 0;//namesList->currentItem();
     for (context->InitSelected(); context->MoreSelected(); context->NextSelected()) {
         int idx = objectsToIndices[&(*context->Current())];
         if (!metadata[idx].item->isSelected()) {
-            current = idx;
+            current = metadata[idx].item;
         }
         metadata[idx].item->setSelected(true);
     }
     namesList->blockSignals(false);
 
-    namesList->setCurrentRow(current);
+    if (current != 0) {
+        namesList->setCurrentItem(current);
+    } else {
+        int row = namesList->currentRow();
+        if (row >= 0) {
+            int idx = itemsToIndices[namesList->item(row)];
+            if (!context->IsSelected(metadata[idx].object)) {
+                namesList->setCurrentRow(-1);
+            }
+        }
+    }
 }
 void MainWindow::onListSelectionChanged()
 {
@@ -309,6 +327,10 @@ void MainWindow::onListSelectionChanged()
         context->AddOrRemoveSelected(obj, false);
     }
     context->UpdateCurrentViewer();
+
+    if (items.length() == 0) {
+        namesList->setCurrentRow(-1);
+    }
 }
 
 void MainWindow::changeCurrentObject(int row)
@@ -316,6 +338,7 @@ void MainWindow::changeCurrentObject(int row)
     if (row < 0) {
         if (current_object >= 0) {
             emit enableObjectEditor(false);
+            current_object = -1;
         }
         return;
     }

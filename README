@@ -11,5 +11,3 @@ Run:
 
 Errors may occur if $CASROOT can not be found. Either set it to
 the root location of OpenCASCADE or edit step-gdml.pro.
-
-Note: project still relies on a shim from Geant4 IESample.
