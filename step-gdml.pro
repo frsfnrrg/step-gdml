@@ -58,6 +58,7 @@ LIBS += -lTKernel -lPTKernel -lTKMath -lTKService -lTKV3d -lTKOpenGl \
         -lTKSTEPBase -lTKShapeSchema -lTKGeomBase -lTKGeomAlgo -lTKG3d -lTKG2d \
         -lTKXSBase -lTKPShape -lTKShHealing -lTKHLR -lTKTopAlgo -lTKMesh -lTKPrim \
         -lTKCDF -lTKBool -lTKBO -lTKFillet -lTKOffset
+LIBS += -lTKCAF -lTKLCAF -lTKXCAF -lTKXDESTEP -lTKXSDRAW
 LIBS += -L/usr/lib -lQtCore -lQtGui
 LIBS += -L$$QMAKE_LIBDIR_X11 $$QMAKE_LIBS_X11
 LIBS += -L$$QMAKE_LIBDIR_OPENGL $$QMAKE_LIBS_OPENGL $$QMAKE_LIBS_THREAD

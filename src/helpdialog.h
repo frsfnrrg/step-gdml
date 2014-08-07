@@ -5,6 +5,7 @@
 #include <QRubberBand>
 #include <QTableWidget>
 #include <QComboBox>
+#include <QList>
 #include <V3d_TypeOfOrientation.hxx>
 
 class V3d_View;
@@ -64,13 +65,15 @@ class ModeComboBox : public QComboBox
 public:
     ModeComboBox();
 
-    void addModeItem(const QString&, void*, Qt::GlobalColor);
+    void addModeItem(MouseMode* m);
     virtual void hidePopup();
     virtual void showPopup();
-    void* getSelectedPointer();
+    MouseMode* getSelectedPointer();
 signals:
     void hidePopupSignal();
     void showPopupSignal();
+private:
+    QList<MouseMode*> list;
 };
 
 class HelpDialog : public QDialog

@@ -404,11 +404,11 @@ ModeComboBox::ModeComboBox()
 {
 }
 
-void ModeComboBox::addModeItem(const QString& text, void* pointer,
-                               Qt::GlobalColor color)
+void ModeComboBox::addModeItem(MouseMode* mode)
 {
-    this->addItem(text, (int) pointer);
-    this->setItemData(this->count() - 1, color, Qt::TextColorRole);
+    this->addItem(mode->getName());
+    list.append(mode);
+    this->setItemData(this->count() - 1, mode->getColor(), Qt::TextColorRole);
 }
 
 void ModeComboBox::hidePopup()
@@ -423,9 +423,9 @@ void ModeComboBox::showPopup()
     emit showPopupSignal();
 }
 
-void* ModeComboBox::getSelectedPointer()
+MouseMode* ModeComboBox::getSelectedPointer()
 {
-    return (void*) this->itemData(this->currentIndex()).toInt();
+    return list[this->currentIndex()];
 }
 
 QLabel* makeLabel(MouseMode* m)
@@ -508,7 +508,7 @@ ModeComboBox* makeHelperComboBox(int row, int col)
                 continue;
             }
 
-            p->addModeItem(m->getName(), m, m->getColor());
+            p->addModeItem(m);
             if (modeConfig[row][col] == m) {
                 p->setCurrentIndex(p->count() - 1);
             }
@@ -517,7 +517,7 @@ ModeComboBox* makeHelperComboBox(int row, int col)
         for (unsigned i = 0; i < sizeof(allScrollModes) / sizeof(allScrollModes[0]);
              i++) {
             MouseMode* m = allScrollModes[i];
-            p->addModeItem(m->getName(), m, m->getColor());
+            p->addModeItem(m);
             if (modeConfig[row][col] == m) {
                 p->setCurrentIndex(p->count() - 1);
             }
@@ -542,7 +542,7 @@ void HelpDialog::editCell(int row, int col)
 
 void HelpDialog::changeItem()
 {
-    MouseScrollMode* m = (MouseScrollMode*) popup->getSelectedPointer();
+    MouseMode* m = popup->getSelectedPointer();
     modeConfig[lastRow][lastCol] = m;
     table->setCellWidget(lastRow, lastCol, makeLabel(m));
 }

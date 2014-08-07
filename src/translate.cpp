@@ -160,12 +160,69 @@ bool Translator::exportGDML(QString path,
     return exportGDML(path, shapes, metadata);
 }
 
+
+#include <STEPCAFControl_Reader.hxx>
+#include <TDocStd_Application.hxx>
+#include <TDocStd_Document.hxx>
+#include <XCAFDoc_DocumentTool.hxx>
+#include <XCAFDoc_ShapeTool.hxx>
+#include <TDF_LabelSequence.hxx>
+#include <TDF_Attribute.hxx>
+#include <XSDRAW.hxx>
+#include <TDataStd_Name.hxx>
+
+bool importSTEPCAF(QString file) {
+#if 1
+    return !file.isEmpty();
+#else
+    STEPCAFControl_Reader reader;
+    reader.SetColorMode(true);
+    reader.SetNameMode(true);
+    reader.SetMatMode(true);
+    IFSelect_ReturnStatus status = reader.ReadFile((Standard_CString)file.toUtf8().constData());
+    if (status != IFSelect_RetDone) {
+        return false;
+    }
+    Handle(TDocStd_Document) doc = new TDocStd_Document("XmlXCAF");
+    bool ok = reader.Transfer(doc);
+    if (!ok) {
+        return false;
+    }
+
+    Handle(XCAFDoc_ShapeTool) shapeTool = XCAFDoc_DocumentTool::ShapeTool(doc->Main());
+    TDF_LabelSequence seq;
+    shapeTool->GetFreeShapes (seq); // vs GetShapes
+    qDebug("%d\n", seq.Length());
+    for (int i=1;i<=seq.Length();i++) {
+        TDF_Label label = seq.Value(i);
+        Handle(TDataStd_Name) name = new TDataStd_Name();
+        label.FindAttribute(name->GetID(), name);
+
+        //char *chars = new char[name->Get().LengthOfCString()];
+        char chars[1000];
+        char* x = chars;
+        name->Get().ToUTF8CString(x);
+        qDebug("NAME %s", chars);
+        //delete[] chars;
+
+        TopoDS_Shape shape;
+        shapeTool->GetShape(label, shape);
+        if (!shape.IsNull()) {
+            qDebug("HOORAY! %d", i);
+        }
+
+    }
+#endif
+}
+
 bool Translator::importSTEP(QString file,
                             const Handle(TopTools_HSequenceOfShape)& shapes)
 {
     if (shapes.IsNull()) {
         return false;
     }
+
+    importSTEPCAF(file);
 
     STEPControl_Reader aReader;
     IFSelect_ReturnStatus status = aReader.ReadFile((Standard_CString)file.toLatin1().constData());
@@ -193,6 +250,7 @@ bool Translator::importSTEP(QString file,
 
     return true;
 }
+
 
 bool Translator::exportGDML(QString path,
                             const Handle(TopTools_HSequenceOfShape)& shapes,

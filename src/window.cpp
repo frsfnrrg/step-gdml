@@ -90,10 +90,8 @@ void MainWindow::loadSettings()
 void MainWindow::closeEvent(QCloseEvent* evt)
 {
     QSettings settings;
-
     settings.setValue("this-geom", this->saveGeometry());
     settings.setValue("splitter-state", splitter->saveState());
-
     HelpDialog::saveConfig();
 
     QMainWindow::closeEvent(evt);
