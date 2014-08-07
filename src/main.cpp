@@ -5,8 +5,50 @@
 #include "translate.h"
 #include "stdio.h"
 
+#include <Message.hxx>
+#include <Message_Messenger.hxx>
+#include <Message_SequenceOfPrinters.hxx>
+
+#include <iostream>
+
+#include <Message_Printer.hxx>
+
+class CustomPrinter : public Message_Printer {
+public:
+    CustomPrinter() {}
+    virtual void Send(const TCollection_ExtendedString& theString,const Message_Gravity,const Standard_Boolean putEndl) const {
+        char buf[theString.LengthOfCString()];
+        char* alias = buf;
+        theString.ToUTF8CString(alias);
+        if (putEndl) {
+            printf("%s\n", alias);
+        } else {
+            printf(alias);
+        }
+    }
+};
+
+void setOpenCASCADEPrinters() {
+    // OSD_Timer writes directly to std::cout. We disable...
+    // This does kill all of its users, but this application
+    // doesn't have any worth keeping. The "proper" solution
+    // is to enable/disable it exactly around the operation
+    // to be excised.
+    std::cout.setstate(std::ios_base::failbit);
+
+    // Update standard OpenCASCADE output method
+    const Message_SequenceOfPrinters& p = Message::DefaultMessenger()->Printers();
+    for (int i=1;i<=p.Length();i++) {
+        Message::DefaultMessenger()->RemovePrinter(p.Value(i));
+    }
+    //Message::DefaultMessenger()->AddPrinter(new CustomPrinter());
+}
+
+
 int main(int argc, char** argv)
 {
+    setOpenCASCADEPrinters();
+
     QApplication app(argc, argv);
     app.setApplicationName("STEP-GDML");
     QStringList args = app.arguments();
