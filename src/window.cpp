@@ -229,6 +229,38 @@ void MainWindow::createMenus()
     this->menuBar()->addMenu(helpMenu);
 }
 
+QList<QString> ensureUniqueness(const QList<QString>& input)
+{
+    QMap<QString, int> nameIndex;
+    QVector<int> nameFreqs;
+    for (int i = 0; i < input.length(); i++) {
+        QString name = input[i];
+        int index = nameIndex.value(name, -1);
+        if (index == -1) {
+            nameFreqs.append(1);
+            nameIndex[name] = nameFreqs.count() - 1;
+        }
+
+        nameFreqs[index] = nameFreqs[index] + 1;
+    }
+
+    QVector<int> nameCounter(nameFreqs);
+
+    QList<QString> output;
+    for (int i = 0; i < input.length(); i++) {
+        QString name = input[i];
+        int index = nameIndex[name];
+        if (nameFreqs[index] > 1) {
+            int len = QString::number(nameFreqs[index]).length();
+            QString num = QString::number(nameCounter[index]);
+            name.append(QString("_") + QString("0").repeated(len - num.length()) + num);
+            nameCounter[index] = nameCounter[index] - 1;
+        }
+        output.append(name);
+    }
+    return output;
+}
+
 void MainWindow::importSTEP(QString path)
 {
     qDebug("Importing file %s", path.toUtf8().data());
@@ -240,18 +272,18 @@ void MainWindow::importSTEP(QString path)
     namesList->clear();
     names.clear();
 
-    bool success = translate->importSTEP(path);
-    qDebug("Success %c", success ? 'Y' : 'N');
-    QList<AIS_InteractiveObject*> objects = Translator::getInteractiveObjects(
-            context);
+    QList<QString> objectNames;
+    QList<AIS_InteractiveObject*>  objects = translate->importSTEP(path,
+            objectNames);
+    qDebug("Success %c", objects.isEmpty() ? 'N' : 'Y');
+    objectNames = ensureUniqueness(objectNames);
 
     Quantity_NameOfColor color = context->DefaultColor();
 
-    int len = QString::number(objects.length()).length();
     for (int i = 0; i < objects.length(); i++) {
         SolidMetadata sm;
-        QString num = QString::number(i);
-        sm.name = QString("0").repeated(len - num.length()) + num;
+
+        sm.name = objectNames[i];
         sm.item = new QListWidgetItem(sm.name);
         sm.object = objects[i];
         sm.material = "ALUMINUM";

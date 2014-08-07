@@ -16,7 +16,6 @@ GdmlWriter::GdmlWriter(QString filename)
 {
     f = fopen(filename.toUtf8().data(), "w");
     if (!f) {
-        printf("FAIL\n");
         throw "FAIL";
     }
 

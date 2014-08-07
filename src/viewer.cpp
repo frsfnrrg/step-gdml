@@ -123,6 +123,7 @@ void Viewer::setOrientation(V3d_TypeOfOrientation orientation)
 void Viewer::resetView()
 {
     setOrientation(V3d_XposYnegZpos);
+    view->ZFitAll(1.5);
     view->FitAll(0.01, Standard_False, Standard_False);
 }
 

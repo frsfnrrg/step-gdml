@@ -7,11 +7,22 @@
 #include <AIS_DisplayMode.hxx>
 #include <AIS_ListOfInteractive.hxx>
 
-#include <STEPControl_Reader.hxx>
-
 #include <TopoDS_Shape.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
+
+#include <STEPCAFControl_Reader.hxx>
+
+#include <TDocStd_Document.hxx>
+
+#include <XCAFDoc_DocumentTool.hxx>
+#include <XCAFDoc_ShapeTool.hxx>
+#include <XCAFDoc_ColorTool.hxx>
+#include <XCAFDoc_MaterialTool.hxx>
+
+#include <TDF_LabelSequence.hxx>
+#include <TDataStd_Name.hxx>
+
 
 //
 //
@@ -21,7 +32,8 @@
 
 // Eventually: do lazy-loading of the dialog internally, so users need not
 // define a custom slot just to create this on demand.
-IODialog::IODialog(QWidget* parent, QFileDialog::AcceptMode mode, QStringList filters, QString suffix) :
+IODialog::IODialog(QWidget* parent, QFileDialog::AcceptMode mode,
+                   QStringList filters, QString suffix) :
     QObject(parent), fd(new QFileDialog(parent))
 {
     fd->setDirectory(QDir::current());
@@ -79,10 +91,13 @@ Translator::Translator(const Handle(AIS_InteractiveContext) theContext) :
 {
 }
 
-bool Translator::displayShapes(const Handle(AIS_InteractiveContext)& theContext, const Handle(TopTools_HSequenceOfShape) & shapes)
+QList<AIS_InteractiveObject*> Translator::displayShapes(const Handle(
+            AIS_InteractiveContext)& theContext,
+        const Handle(TopTools_HSequenceOfShape) & shapes)
 {
+    QList<AIS_InteractiveObject*> objs;
     if (shapes.IsNull() || shapes->IsEmpty()) {
-        return false;
+        return objs;
     }
 
     for (int i = 1; i <= shapes->Length(); i++) {
@@ -90,14 +105,16 @@ bool Translator::displayShapes(const Handle(AIS_InteractiveContext)& theContext,
         e->SetDisplayMode(AIS_Shaded);
 
         theContext->Display(e, false);
+        objs.append(e);
     }
 
     // update all viewers
     theContext->UpdateCurrentViewer();
-    return true;
+    return objs;
 }
 
-bool Translator::findAllShapes(const Handle(AIS_InteractiveContext)& ctxt, const Handle(TopTools_HSequenceOfShape) & shapes)
+bool Translator::findAllShapes(const Handle(AIS_InteractiveContext)& ctxt,
+                               const Handle(TopTools_HSequenceOfShape) & shapes)
 {
     if (shapes.IsNull()) {
         return false;
@@ -119,7 +136,8 @@ bool Translator::findAllShapes(const Handle(AIS_InteractiveContext)& ctxt, const
     return !shapes->IsEmpty();
 }
 
-QList<AIS_InteractiveObject*> Translator::getInteractiveObjects(const Handle(AIS_InteractiveContext)& ctxt)
+QList<AIS_InteractiveObject*> Translator::getInteractiveObjects(const Handle(
+            AIS_InteractiveContext)& ctxt)
 {
     QList<AIS_InteractiveObject*> qll;
     AIS_ListOfInteractive objs;
@@ -131,18 +149,19 @@ QList<AIS_InteractiveObject*> Translator::getInteractiveObjects(const Handle(AIS
         if (obj->IsKind(STANDARD_TYPE(AIS_Shape))) {
             qll.append(&(*obj));
         } else {
-            printf("ERROR\n");
+            qDebug("ERROR\n");
         }
         objs.RemoveFirst();
     }
     return qll;
 }
 
-bool Translator::importSTEP(QString path)
+QList<AIS_InteractiveObject*> Translator::importSTEP(QString path,
+        QList<QString>& objNames)
 {
     Handle(TopTools_HSequenceOfShape) shapes = new TopTools_HSequenceOfShape();
-    if (!importSTEP(path, shapes)) {
-        return false;
+    if (!importSTEP(path, shapes, objNames)) {
+        return QList<AIS_InteractiveObject*>();
     }
     return displayShapes(context, shapes);
 }
@@ -160,26 +179,34 @@ bool Translator::exportGDML(QString path,
     return exportGDML(path, shapes, metadata);
 }
 
+QString getName(const TDF_Label& label)
+{
+    Handle(TDataStd_Name) name = new TDataStd_Name();
+    bool found = label.FindAttribute(name->GetID(), name);
+    if (!found) {
+        return QString("???");
+    } else {
+        char chars[name->Get().LengthOfCString()];
+        char* x = chars;
+        name->Get().ToUTF8CString(x);
+        return QString(x);
+    }
+}
 
-#include <STEPCAFControl_Reader.hxx>
-#include <TDocStd_Application.hxx>
-#include <TDocStd_Document.hxx>
-#include <XCAFDoc_DocumentTool.hxx>
-#include <XCAFDoc_ShapeTool.hxx>
-#include <TDF_LabelSequence.hxx>
-#include <TDF_Attribute.hxx>
-#include <XSDRAW.hxx>
-#include <TDataStd_Name.hxx>
+bool Translator::importSTEP(QString file,
+                            const Handle(TopTools_HSequenceOfShape)& shapes,
+                            QList<QString>& objNames)
+{
+    if (shapes.IsNull()) {
+        return false;
+    }
 
-bool importSTEPCAF(QString file) {
-#if 1
-    return !file.isEmpty();
-#else
     STEPCAFControl_Reader reader;
     reader.SetColorMode(true);
     reader.SetNameMode(true);
     reader.SetMatMode(true);
-    IFSelect_ReturnStatus status = reader.ReadFile((Standard_CString)file.toUtf8().constData());
+    IFSelect_ReturnStatus status = reader.ReadFile((Standard_CString)
+                                   file.toUtf8().constData());
     if (status != IFSelect_RetDone) {
         return false;
     }
@@ -189,63 +216,26 @@ bool importSTEPCAF(QString file) {
         return false;
     }
 
-    Handle(XCAFDoc_ShapeTool) shapeTool = XCAFDoc_DocumentTool::ShapeTool(doc->Main());
-    TDF_LabelSequence seq;
-    shapeTool->GetFreeShapes (seq); // vs GetShapes
-    qDebug("%d\n", seq.Length());
-    for (int i=1;i<=seq.Length();i++) {
-        TDF_Label label = seq.Value(i);
-        Handle(TDataStd_Name) name = new TDataStd_Name();
-        label.FindAttribute(name->GetID(), name);
+    TDF_Label mainLabel = doc->Main();
+    Handle(XCAFDoc_ShapeTool) shapeTool = XCAFDoc_DocumentTool::ShapeTool(
+            mainLabel);
 
-        //char *chars = new char[name->Get().LengthOfCString()];
-        char chars[1000];
-        char* x = chars;
-        name->Get().ToUTF8CString(x);
-        qDebug("NAME %s", chars);
-        //delete[] chars;
+    TDF_LabelSequence labels;
+    shapeTool->GetFreeShapes(labels);
 
-        TopoDS_Shape shape;
-        shapeTool->GetShape(label, shape);
-        if (!shape.IsNull()) {
-            qDebug("HOORAY! %d", i);
-        }
-
-    }
-#endif
-}
-
-bool Translator::importSTEP(QString file,
-                            const Handle(TopTools_HSequenceOfShape)& shapes)
-{
-    if (shapes.IsNull()) {
-        return false;
-    }
-
-    importSTEPCAF(file);
-
-    STEPControl_Reader aReader;
-    IFSelect_ReturnStatus status = aReader.ReadFile((Standard_CString)file.toLatin1().constData());
-    if (status == IFSelect_RetDone) {
-        int nbr = aReader.NbRootsForTransfer();
-        for (Standard_Integer n = 1; n <= nbr; n++) {
-            bool ok = aReader.TransferRoot(n);
-            if (!ok) {
-                continue;
-            }
-            int nbs = aReader.NbShapes();
-            if (nbs > 0) {
-                for (int i = 1; i <= nbs; i++) {
-                    TopoDS_Shape shape = aReader.Shape(i);
-                    for (TopExp_Explorer e(shape, TopAbs_SOLID); e.More(); e.Next()) {
-                        TopoDS_Shape solid = e.Current();
-                        shapes->Append(solid);
-                    }
-                }
+    for (int i = 1; i <= labels.Length(); i++) {
+        TopoDS_Shape tds = shapeTool->GetShape(labels.Value(i));
+        for (TopExp_Explorer e(tds, TopAbs_SOLID); e.More(); e.Next()) {
+            TopoDS_Shape solid = e.Current();
+            shapes->Append(solid);
+            TDF_Label loc;
+            bool found = shapeTool->Search(solid, loc);
+            if (found) {
+                objNames.append(getName(loc));
+            } else {
+                objNames.append("?");
             }
         }
-    } else {
-        return false;
     }
 
     return true;

@@ -12,7 +12,8 @@ class IODialog : public QObject
 {
     Q_OBJECT
 public:
-    IODialog(QWidget* parent, QFileDialog::AcceptMode, QStringList filters, QString suffix);
+    IODialog(QWidget* parent, QFileDialog::AcceptMode, QStringList filters,
+             QString suffix);
 
     void hook(QObject* target, const char* slot);
 
@@ -35,14 +36,19 @@ class Translator: public QObject
     Q_OBJECT
 public:
     Translator(const Handle(AIS_InteractiveContext) context);
-    bool importSTEP(QString);
+    QList<AIS_InteractiveObject*> importSTEP(QString, QList<QString>&);
     bool exportGDML(QString, const QVector<SolidMetadata>&);
 
-    static bool importSTEP(QString, const Handle(TopTools_HSequenceOfShape)&);
-    static bool exportGDML(QString, const Handle(TopTools_HSequenceOfShape)&, const QVector<SolidMetadata>&);
-    static bool displayShapes(const Handle(AIS_InteractiveContext)&, const Handle(TopTools_HSequenceOfShape)&);
-    static bool findAllShapes(const Handle(AIS_InteractiveContext)&, const Handle(TopTools_HSequenceOfShape)&);
-    static QList<AIS_InteractiveObject*> getInteractiveObjects(const Handle(AIS_InteractiveContext)&);
+    static bool importSTEP(QString, const Handle(TopTools_HSequenceOfShape)&,
+                           QList<QString>&);
+    static bool exportGDML(QString, const Handle(TopTools_HSequenceOfShape)&,
+                           const QVector<SolidMetadata>&);
+    static QList<AIS_InteractiveObject*> displayShapes(const Handle(
+                AIS_InteractiveContext)&, const Handle(TopTools_HSequenceOfShape)&);
+    static bool findAllShapes(const Handle(AIS_InteractiveContext)&,
+                              const Handle(TopTools_HSequenceOfShape)&);
+    static QList<AIS_InteractiveObject*> getInteractiveObjects(const Handle(
+                AIS_InteractiveContext)&);
 private:
 
     static GdmlWriter* gdmlWriter;
