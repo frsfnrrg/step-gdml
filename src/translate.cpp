@@ -104,6 +104,32 @@ QList<AIS_InteractiveObject*> Translator::displayShapes(const Handle(
         AIS_Shape* e = new AIS_Shape(shapes->Value(i));
         e->SetDisplayMode(AIS_Shaded);
 
+        Graphic3d_MaterialAspect mat;
+        mat.SetTransparency(0.0);
+        mat.SetShininess(0.003);
+        mat.SetEnvReflexion(0.003);
+
+        mat.SetAmbient(0.5);
+        mat.SetAmbientColor(Quantity_NOC_WHITE);
+        mat.SetReflectionModeOn(Graphic3d_TOR_AMBIENT);
+
+        mat.SetDiffuse(0.65);
+        mat.SetDiffuseColor(Quantity_NOC_WHITE);
+        mat.SetReflectionModeOn(Graphic3d_TOR_DIFFUSE);
+
+        mat.SetSpecular(0.01);
+        mat.SetSpecularColor(Quantity_NOC_WHITE);
+        mat.SetReflectionModeOn(Graphic3d_TOR_SPECULAR);
+
+        mat.SetEmissive(0.0);
+        mat.SetEmissiveColor(Quantity_NOC_WHITE);
+        mat.SetReflectionModeOn(Graphic3d_TOR_EMISSION);
+
+        mat.SetMaterialName("Magic Material");
+        mat.SetMaterialType(Graphic3d_MATERIAL_ASPECT);
+
+        e->SetMaterial(mat);
+
         theContext->Display(e, false);
         objs.append(e);
     }
@@ -157,7 +183,7 @@ QList<AIS_InteractiveObject*> Translator::getInteractiveObjects(const Handle(
 }
 
 QList<AIS_InteractiveObject*> Translator::importSTEP(QString path,
-        QList<QString>& objNames)
+        QList<QPair<QString, QColor> >& objNames)
 {
     Handle(TopTools_HSequenceOfShape) shapes = new TopTools_HSequenceOfShape();
     if (!importSTEP(path, shapes, objNames)) {
@@ -179,6 +205,7 @@ bool Translator::exportGDML(QString path,
     return exportGDML(path, shapes, metadata);
 }
 
+
 QString getName(const TDF_Label& label)
 {
     Handle(TDataStd_Name) name = new TDataStd_Name();
@@ -193,9 +220,46 @@ QString getName(const TDF_Label& label)
     }
 }
 
+uint qHash(const QColor& color)
+{
+    return qHash(color.name());
+}
+
+QColor getColor(const TopoDS_Shape& shape,
+                const Handle(XCAFDoc_ColorTool)& tool)
+{
+    bool success;
+    Quantity_Color color;
+    // From observation (no research yet)
+    // ColorSurf/ColorCurv can apply to both faces and objects.
+    // ColorGen has yet to appear.
+    // When ColorCurv is present, so is ColorSurf.
+    //
+
+    success = tool->GetColor(shape, XCAFDoc_ColorSurf, color);
+    if (success) {
+        qDebug("XCAFDoc_ColorSurf %d %f %f %f", shape.ShapeType(), color.Red(),
+               color.Green(), color.Blue());
+        return QColor::fromRgbF(color.Red(), color.Green(), color.Blue());
+    }
+    success = tool->GetColor(shape, XCAFDoc_ColorCurv, color);
+    if (success) {
+        qDebug("XCAFDoc_ColorCurv %d %f %f %f", shape.ShapeType(), color.Red(),
+               color.Green(), color.Blue());
+        return QColor::fromRgbF(color.Red(), color.Green(), color.Blue());
+    }
+    success = tool->GetColor(shape, XCAFDoc_ColorGen, color);
+    if (success) {
+        qDebug("XCAFDoc_ColorGen %d %f %f %f", shape.ShapeType(), color.Red(),
+               color.Green(), color.Blue());
+        return QColor::fromRgbF(color.Red(), color.Green(), color.Blue());
+    }
+    return QColor();
+}
+
 bool Translator::importSTEP(QString file,
                             const Handle(TopTools_HSequenceOfShape)& shapes,
-                            QList<QString>& objNames)
+                            QList<QPair<QString, QColor> >& objData)
 {
     if (shapes.IsNull()) {
         return false;
@@ -205,13 +269,18 @@ bool Translator::importSTEP(QString file,
     reader.SetColorMode(true);
     reader.SetNameMode(true);
     reader.SetMatMode(true);
+
+    qDebug("Reading begun.");
     IFSelect_ReturnStatus status = reader.ReadFile((Standard_CString)
                                    file.toUtf8().constData());
+    qDebug("Reading complete.");
     if (status != IFSelect_RetDone) {
         return false;
     }
     Handle(TDocStd_Document) doc = new TDocStd_Document("XmlXCAF");
+    qDebug("Transfer begun.");
     bool ok = reader.Transfer(doc);
+    qDebug("Transfer complete.");
     if (!ok) {
         return false;
     }
@@ -219,21 +288,54 @@ bool Translator::importSTEP(QString file,
     TDF_Label mainLabel = doc->Main();
     Handle(XCAFDoc_ShapeTool) shapeTool = XCAFDoc_DocumentTool::ShapeTool(
             mainLabel);
+    Handle(XCAFDoc_ColorTool) colorTool = XCAFDoc_DocumentTool::ColorTool(
+            mainLabel);
 
     TDF_LabelSequence labels;
     shapeTool->GetFreeShapes(labels);
-
     for (int i = 1; i <= labels.Length(); i++) {
         TopoDS_Shape tds = shapeTool->GetShape(labels.Value(i));
-        for (TopExp_Explorer e(tds, TopAbs_SOLID); e.More(); e.Next()) {
-            TopoDS_Shape solid = e.Current();
+        for (TopExp_Explorer exp(tds, TopAbs_SOLID); exp.More(); exp.Next()) {
+            TopoDS_Shape solid = exp.Current();
             shapes->Append(solid);
+
+            QColor result = getColor(solid, colorTool);
+
+            if (!result.isValid()) {
+                // If there is no applied color, grab the color from the object.
+                QSet<QColor> cols;
+                for (TopExp_Explorer fcxp(solid, TopAbs_FACE); fcxp.More(); fcxp.Next())  {
+                    TopoDS_Shape face = fcxp.Current();
+                    QColor faceColor = getColor(face, colorTool);
+                    if (faceColor.isValid()) {
+                        cols.insert(faceColor);
+                    }
+                }
+                if (cols.size()) {
+                    int r = 0, g = 0, b = 0;
+                    for (QSet<QColor>::const_iterator c = cols.begin(); c != cols.end(); c++) {
+                        const QColor& t = *c;
+                        r += t.red(), g += t.green(), b += t.blue();
+                    }
+
+                    result = QColor(r / cols.size(), g / cols.size(), b / cols.size());
+
+                    if (cols.size() > 1) {
+                        qDebug("Note: Multiple colors merged");
+                    }
+                }
+            }
+
+            if (!result.isValid()) {
+                result = QColor::fromRgbF(0.5, 0.5, 0.5);
+            }
+
             TDF_Label loc;
             bool found = shapeTool->Search(solid, loc);
             if (found) {
-                objNames.append(getName(loc));
+                objData.append(QPair<QString, QColor>(getName(loc), result));
             } else {
-                objNames.append("?");
+                objData.append(QPair<QString, QColor>("?", result));
             }
         }
     }

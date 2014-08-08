@@ -1,16 +1,18 @@
 #include "gdmlwriter.h"
 #include <BRepBndLib.hxx>
-#include <BRepMesh_FastDiscret.hxx>
 #include <StlTransfer.hxx>
 #include <StlMesh_Mesh.hxx>
 #include <StlMesh_SequenceOfMeshTriangle.hxx>
 #include <StlMesh_MeshTriangle.hxx>
 #include <StlMesh_MeshExplorer.hxx>
-#include <BRep_Builder.hxx>
 #include <Standard_Version.hxx>
 
 #include <QSet>
 #include <QMap>
+
+QString GdmlWriter::defaultMaterial() {
+    return QString("VACUUM");
+}
 
 GdmlWriter::GdmlWriter(QString filename)
 {

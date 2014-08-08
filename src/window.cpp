@@ -1,12 +1,18 @@
 #include "window.h"
 #include "viewer.h"
 #include "translate.h"
+#include "gdmlwriter.h"
 #include "util.h"
 #include "helpdialog.h"
 #include <cstdio>
+
+#include <AIS_InteractiveObject.hxx>
+
 #include <V3d_Viewer.hxx>
 #include <V3d_View.hxx>
-#include <AIS_InteractiveObject.hxx>
+#include <V3d_AmbientLight.hxx>
+#include <V3d_DirectionalLight.hxx>
+
 
 QIcon makeIcon(QColor color)
 {
@@ -56,8 +62,11 @@ MainWindow::MainWindow(QString openFile) :
 
     V3d_Viewer* v = Viewer::makeViewer();
     context = new AIS_InteractiveContext(v);
-    // SetDefaultLights must be called after a context is made
-    v->SetDefaultLights();
+    // Lights must be configured after the context is set. Why?
+    v->SetLightOn(new V3d_DirectionalLight(v, V3d_Zneg, Quantity_NOC_WHITE,
+                                           Standard_True));
+    v->SetLightOn(new V3d_AmbientLight(v, Quantity_NOC_WHITE));
+
 
     view = new Viewer(context, this);
     connect(view, SIGNAL(selectionMightBeChanged()),
@@ -110,7 +119,8 @@ void MainWindow::createInterface()
             SLOT(changeCurrentObject(int)));
 
     objMaterial = new QComboBox();
-    objMaterial->addItems(QStringList() << "ALUMINUM" << "STEEL");
+    objMaterial->addItems(QStringList() << GdmlWriter::defaultMaterial());
+    objMaterial->setEditable(true);
     connect(objMaterial, SIGNAL(currentIndexChanged(int)),
             SLOT(currentObjectUpdated()));
     QLabel* objMaterialLabel = new QLabel("Material");
@@ -272,13 +282,17 @@ void MainWindow::importSTEP(QString path)
     namesList->clear();
     names.clear();
 
-    QList<QString> objectNames;
+    QList<QPair<QString, QColor> > objectData;
     QList<AIS_InteractiveObject*>  objects = translate->importSTEP(path,
-            objectNames);
+            objectData);
     qDebug("Success %c", objects.isEmpty() ? 'N' : 'Y');
+    QList<QString> objectNames;
+    QList<QColor> objectColors;
+    for (int i = 0; i < objectData.length(); i++) {
+        objectNames.append(objectData[i].first);
+        objectColors.append(objectData[i].second);
+    }
     objectNames = ensureUniqueness(objectNames);
-
-    Quantity_NameOfColor color = context->DefaultColor();
 
     for (int i = 0; i < objects.length(); i++) {
         SolidMetadata sm;
@@ -287,7 +301,8 @@ void MainWindow::importSTEP(QString path)
         sm.item = new QListWidgetItem(sm.name);
         sm.object = objects[i];
         sm.material = "ALUMINUM";
-        sm.color = Quantity_Color(color);
+        QColor c = objectColors[i];
+        sm.color = Quantity_Color(c.redF(), c.greenF(), c.blueF(), Quantity_TOC_RGB);
         sm.transp = 0.0;
 
         metadata.append(sm);

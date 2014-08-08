@@ -11,6 +11,8 @@
 class GdmlWriter
 {
 public:
+    static QString defaultMaterial();
+
     GdmlWriter(QString);
     ~GdmlWriter();
     void writeIntro();

@@ -65,7 +65,7 @@ int main(int argc, char** argv)
         QString ifile = args[1];
         QString ofile = args[2];
         Handle(TopTools_HSequenceOfShape) shapes = new TopTools_HSequenceOfShape();
-        QList<QString> li;
+        QList<QPair<QString, QColor> > li;
         if (!Translator::importSTEP(ifile, shapes, li)) {
             printf("Import failed. :-(\n");
             return -1;

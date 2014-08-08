@@ -30,17 +30,18 @@ private:
 
 
 class GdmlWriter;
+class Graphic3d_MaterialAspect;
 
 class Translator: public QObject
 {
     Q_OBJECT
 public:
     Translator(const Handle(AIS_InteractiveContext) context);
-    QList<AIS_InteractiveObject*> importSTEP(QString, QList<QString>&);
+    QList<AIS_InteractiveObject*> importSTEP(QString, QList<QPair<QString, QColor> >&);
     bool exportGDML(QString, const QVector<SolidMetadata>&);
 
     static bool importSTEP(QString, const Handle(TopTools_HSequenceOfShape)&,
-                           QList<QString>&);
+                           QList<QPair<QString, QColor> >&);
     static bool exportGDML(QString, const Handle(TopTools_HSequenceOfShape)&,
                            const QVector<SolidMetadata>&);
     static QList<AIS_InteractiveObject*> displayShapes(const Handle(
