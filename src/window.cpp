@@ -485,6 +485,9 @@ void MainWindow::getColor()
     QColor initial = QColor::fromRgbF(col.Red(), col.Green(), col.Blue());
 
     QColor next = QColorDialog::getColor(initial, this, "Select Color");
+    if (!next.isValid()) {
+        return;
+    }
     objColor->setIcon(makeIcon(next));
 
     Quantity_Color nco(next.redF(), next.greenF(), next.blueF(), Quantity_TOC_RGB);
