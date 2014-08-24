@@ -1,9 +1,7 @@
 #ifndef VIEWER_H
 #define VIEWER_H
 
-#include <QWidget>
-#include <QRubberBand>
-#include <QPaintEngine>
+#include <QtGui>
 
 #include <Standard.hxx>
 #include <AIS_InteractiveContext.hxx>
@@ -15,7 +13,8 @@ class MouseButtonMode;
 class MouseScrollMode;
 class Viewer;
 
-class ViewActionData {
+class ViewActionData
+{
 public:
     V3d_View* view;
     AIS_InteractiveContext* context;
@@ -33,7 +32,7 @@ class Viewer : public QWidget
 {
     Q_OBJECT
 public:
-    explicit Viewer(Handle(AIS_InteractiveContext), QWidget *parent = 0);
+    explicit Viewer(Handle(AIS_InteractiveContext), QWidget* parent = 0);
     virtual ~Viewer();
 
     static V3d_Viewer* makeViewer();
@@ -50,7 +49,10 @@ public slots:
 private:
     void init();
 
-    virtual QPaintEngine* paintEngine() const {return 0;}
+    virtual QPaintEngine* paintEngine() const
+    {
+        return 0;
+    }
 
     virtual void paintEvent(QPaintEvent*);
     virtual void resizeEvent(QResizeEvent*);
@@ -69,6 +71,7 @@ private:
     MouseScrollMode* scrollMode;
     QRubberBand* rubberBand;
     QMouseEvent* lastEvt;
+    bool mustResize;
 };
 
 #endif // VIEWER_H

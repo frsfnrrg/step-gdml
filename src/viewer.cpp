@@ -113,6 +113,7 @@ void Viewer::init()
     view->TriedronDisplay(Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1,
                           V3d_WIREFRAME);
     view->MustBeResized();
+    mustResize = false;
 }
 
 void Viewer::setOrientation(V3d_TypeOfOrientation orientation)
@@ -135,14 +136,17 @@ void Viewer::paintEvent(QPaintEvent*)
         rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
         rubberBand->hide();
     } else {
-        view->Redraw();
+        if (mustResize) {
+            view->MustBeResized();
+            mustResize = false;
+        } else {
+            view->Redraw();
+        }
     }
 }
-void Viewer::resizeEvent(QResizeEvent*)
+void Viewer::resizeEvent(QResizeEvent* e)
 {
-    if (!view.IsNull()) {
-        view->MustBeResized();
-    }
+    mustResize = true;
 }
 
 void Viewer::mousePressEvent(QMouseEvent* evt)
