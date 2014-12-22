@@ -125,7 +125,11 @@ void Viewer::resetView()
 {
     setOrientation(V3d_XposYnegZpos);
     view->ZFitAll(1.5);
+#if OCC_VERSION_HEX > 0x060701
+    view->FitAll(0.01, Standard_False);
+#else
     view->FitAll(0.01, Standard_False, Standard_False);
+#endif
 }
 
 void Viewer::paintEvent(QPaintEvent*)

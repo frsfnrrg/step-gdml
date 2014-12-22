@@ -2,6 +2,22 @@ TEMPLATE = app
 CONFIG += debug_and_release qt
 
 #################
+### VARIABLES ###
+#################
+
+CASROOT = $$(CASROOT)
+isEmpty (CASROOT) {
+    CASROOT = /opt/OpenCASCADE
+}
+message (CASROOT is $$CASROOT)
+
+OCCLIB=$$CASROOT/lib
+!exists(OCCLIB) {
+    OCCLIB=$$CASROOT/lin64/gcc/lib
+}
+message (OCCLIB is $$OCCLIB)
+
+#################
 #### TARGETS ####
 #################
 
@@ -35,12 +51,6 @@ DEFINES = CSFDB QT_NO_DEPRECATED
 #### INCLUDES ####
 ##################
 
-CASROOT = $$(CASROOT)
-isEmpty (CASROOT) {
-    CASROOT = /opt/OpenCASCADE
-}
-message (CASROOT is $$CASROOT)
-
 INCLUDEPATH = $$CASROOT $$CASROOT/inc $(QTDIR)/include/QtCore \
               $(QTDIR)/include/QtGui $(QTDIR)/include
 INCLUDEPATH += $$QMAKE_INCDIR_X11 $$QMAKE_INCDIR_OPENGL $$QMAKE_INCDIR_THREAD
@@ -51,9 +61,9 @@ DEFINES += LIN LININTEL OCC_CONVERT_SIGNALS HAVE_CONFIG_H HAVE_WOK_CONFIG_H
 ##############
 
 # To place CASROOT before -L/usr/lib in case we override it
-QMAKE_LFLAGS += -L$$CASROOT/lib
+QMAKE_LFLAGS += -L$$OCCLIB
 
- LIBS += -lTKernel -lPTKernel -lTKMath -lTKService -lTKV3d -lTKOpenGl \
+LIBS += -lTKernel -lPTKernel -lTKMath -lTKService -lTKV3d -lTKOpenGl \
          -lTKBRep -lTKIGES -lTKSTL -lTKVRML -lTKSTEP -lTKSTEPAttr -lTKSTEP209 \
          -lTKSTEPBase -lTKShapeSchema -lTKGeomBase -lTKGeomAlgo -lTKG3d -lTKG2d \
          -lTKXSBase -lTKPShape -lTKShHealing -lTKHLR -lTKTopAlgo -lTKMesh -lTKPrim \

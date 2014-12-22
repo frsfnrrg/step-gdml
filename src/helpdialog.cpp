@@ -1,6 +1,7 @@
 #include "helpdialog.h"
 #include <QtGui>
 #include <V3d_Viewer.hxx>
+#include <Visual3d_ViewMappingDefinitionError.hxx>
 #include "viewer.h"
 
 #define NAME_IMPL(X) virtual QString getName() {return QString(X);}
@@ -243,7 +244,14 @@ void doScroll(const Handle(V3d_View)& v, double step)
     } else {
         factor = 1.0 / (1.0 - step);
     }
-    v->SetZoom(factor, true);
+    // TODO: develop a safer way to handle zooming amounts
+    double initial = v->Scale();
+    try {
+        v->SetScale(initial * factor);
+    } catch (Visual3d_ViewMappingDefinitionError& err) {
+        qDebug("Too far. Disregarding");
+        v->SetScale(initial);
+    }
 }
 
 class ClsScrZoom : public MouseScrollMode

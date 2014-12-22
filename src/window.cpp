@@ -249,9 +249,9 @@ QList<QString> ensureUniqueness(const QList<QString>& input)
         if (index == -1) {
             nameFreqs.append(1);
             nameIndex[name] = nameFreqs.count() - 1;
+        } else {
+            nameFreqs[index]++;
         }
-
-        nameFreqs[index] = nameFreqs[index] + 1;
     }
 
     QVector<int> nameCounter(nameFreqs);
@@ -264,7 +264,7 @@ QList<QString> ensureUniqueness(const QList<QString>& input)
             int len = QString::number(nameFreqs[index]).length();
             QString num = QString::number(nameCounter[index]);
             name.append(QString("_") + QString("0").repeated(len - num.length()) + num);
-            nameCounter[index] = nameCounter[index] - 1;
+            nameCounter[index]--;
         }
         output.append(name);
     }
