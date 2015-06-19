@@ -12,3 +12,4 @@ build
 callgrind*
 *.orig
 *.kate-swp
+io
