@@ -7,7 +7,6 @@
 
 #include <QMouseEvent>
 #include <QResizeEvent>
-#include <QWindowsStyle>
 
 #include <Standard_Version.hxx>
 #if OCC_VERSION_HEX >= 0x060503
@@ -65,7 +64,9 @@ V3d_Viewer* Viewer::makeViewer()
     static Handle(Graphic3d_GraphicDriver) graphics;
     static Handle(Aspect_DisplayConnection) connection;
     if (graphics.IsNull()) {
-        connection = new Aspect_DisplayConnection(getenv("DISPLAY"));
+        // Default constructor for Aspect_DisplayConnection
+        // uses DISPLAY env. variable
+        connection = new Aspect_DisplayConnection();
         graphics = new OpenGl_GraphicDriver(connection);
     }
 #else

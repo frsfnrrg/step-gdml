@@ -1,4 +1,8 @@
 #include "gdmlwriter.h"
+
+#include <QSet>
+#include <QMap>
+
 #include <BRepBndLib.hxx>
 #include <StlTransfer.hxx>
 #include <StlMesh_Mesh.hxx>
@@ -7,10 +11,9 @@
 #include <StlMesh_MeshExplorer.hxx>
 #include <Standard_Version.hxx>
 
-#include <QSet>
-#include <QMap>
 
-QString GdmlWriter::defaultMaterial() {
+QString GdmlWriter::defaultMaterial()
+{
     return QString("VACUUM");
 }
 
@@ -111,7 +114,8 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
     _("  <define>\n");
     int numverts = verts.size();
     for (int i = 0; i < numverts; i++) {
-        _("    <position name=\"%d-%d\" x=\"%f\" y=\"%f\" z=\"%f\" unit=\"mm\"/>\n", index, i, verts[i].X(), verts[i].Y(), verts[i].Z());
+        _("    <position name=\"%d-%d\" x=\"%f\" y=\"%f\" z=\"%f\" unit=\"mm\"/>\n",
+          index, i, verts[i].X(), verts[i].Y(), verts[i].Z());
     }
     _("  </define>\n");
 
@@ -134,7 +138,8 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
             R2 = triconv[V2 + idx - 1];
             R3 = triconv[V3 + idx - 1];
 
-            _("      <triangular vertex1=\"%d-%d\" vertex2=\"%d-%d\" vertex3=\"%d-%d\" type=\"ABSOLUTE\"/>\n", index, R1, index, R2, index, R3);
+            _("      <triangular vertex1=\"%d-%d\" vertex2=\"%d-%d\" vertex3=\"%d-%d\" type=\"ABSOLUTE\"/>\n",
+              index, R1, index, R2, index, R3);
 
         }
         num_tris += x.Length();
@@ -147,7 +152,8 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
     materials.append(material);
     BRepBndLib::Add(shape, bounds);
 
-    printf("% 6d vertices, % 6d triangles <- %s\n", num_verts, num_tris, name.toUtf8().data());
+    printf("% 6d vertices, % 6d triangles <- %s\n", num_verts, num_tris,
+           name.toUtf8().data());
 }
 
 void GdmlWriter::writeWorldBox()
@@ -171,11 +177,13 @@ void GdmlWriter::writeWorldBox()
     sz = (zMax - zMin);
 
     _("  <define>\n");
-    _("    <position name=\"center\" x=\"%f\" y=\"%f\" z=\"%f\" unit=\"mm\"/>\n", -cx, -cy, -cz);
+    _("    <position name=\"center\" x=\"%f\" y=\"%f\" z=\"%f\" unit=\"mm\"/>\n",
+      -cx, -cy, -cz);
     _("  </define>\n");
 
     _("  <solids>\n");
-    _("    <box name=\"worldbox\" x=\"%f\" y=\"%f\" z=\"%f\" lunit=\"mm\"/>\n", sx, sy, sz);
+    _("    <box name=\"worldbox\" x=\"%f\" y=\"%f\" z=\"%f\" lunit=\"mm\"/>\n", sx,
+      sy, sz);
     _("  </solids>\n");
 }
 

@@ -1,12 +1,14 @@
 #ifndef GDMLWRITER_H
 #define GDMLWRITER_H
 
-#include <Standard.hxx>
-#include <TopoDS.hxx>
-#include "stdio.h"
 #include <QString>
 #include <QList>
+
+#include <Standard.hxx>
+#include <TopoDS.hxx>
 #include <Bnd_Box.hxx>
+
+#include <stdio.h>
 
 class GdmlWriter
 {

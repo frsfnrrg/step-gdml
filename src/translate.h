@@ -1,12 +1,13 @@
 #ifndef TRANSLATE_H
 #define TRANSLATE_H
 
-#include <QtGui>
+#include "metadata.h"
+
+#include <QFileDialog>
 
 #include <Standard.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
-#include "metadata.h"
 
 class IODialog : public QObject
 {
@@ -37,7 +38,8 @@ class Translator: public QObject
     Q_OBJECT
 public:
     Translator(const Handle(AIS_InteractiveContext) context);
-    QList<AIS_InteractiveObject*> importSTEP(QString, QList<QPair<QString, QColor> >&);
+    QList<AIS_InteractiveObject*> importSTEP(QString,
+            QList<QPair<QString, QColor> >&);
     bool exportGDML(QString, const QVector<SolidMetadata>&);
 
     static bool importSTEP(QString, const Handle(TopTools_HSequenceOfShape)&,

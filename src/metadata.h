@@ -2,6 +2,7 @@
 #define METADATA_H
 
 #include <QString>
+
 #include <Quantity_Color.hxx>
 #include <Standard_Real.hxx>
 

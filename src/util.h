@@ -1,9 +1,9 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
-#include <QtGui>
-#include <QtCore>
+#include <QAction>
 
-QAction* mkAction(QObject* parent, const char* text, const char* shortcut, const char* slot);
+QAction* mkAction(QObject* parent, const char* text, const char* shortcut,
+                  const char* slot);
 
 #endif

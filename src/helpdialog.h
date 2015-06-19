@@ -6,6 +6,7 @@
 #include <QTableWidget>
 #include <QComboBox>
 #include <QList>
+
 #include <V3d_TypeOfOrientation.hxx>
 
 class V3d_View;

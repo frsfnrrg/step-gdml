@@ -1,8 +1,16 @@
 #include "helpdialog.h"
-#include <QtGui>
+#include "viewer.h"
+
+#include <QMenu>
+#include <QLabel>
+#include <QHeaderView>
+#include <QPushButton>
+#include <QHBoxLayout>
+#include <QSettings>
+
 #include <V3d_Viewer.hxx>
 #include <Visual3d_ViewMappingDefinitionError.hxx>
-#include "viewer.h"
+
 
 #define NAME_IMPL(X) virtual QString getName() {return QString(X);}
 #define COLOR_IMPL(X) virtual Qt::GlobalColor getColor() {return X;}
@@ -416,7 +424,8 @@ void ModeComboBox::addModeItem(MouseMode* mode)
 {
     this->addItem(mode->getName());
     list.append(mode);
-    this->setItemData(this->count() - 1, mode->getColor(), Qt::TextColorRole);
+    this->setItemData(this->count() - 1, QColor(mode->getColor()),
+                      Qt::TextColorRole);
 }
 
 void ModeComboBox::hidePopup()

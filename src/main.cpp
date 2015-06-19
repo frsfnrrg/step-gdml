@@ -1,22 +1,23 @@
-#include <QtCore>
-#include <QtGui>
-
 #include "window.h"
 #include "translate.h"
 #include "stdio.h"
 
+#include <QApplication>
+
 #include <Message.hxx>
 #include <Message_Messenger.hxx>
 #include <Message_SequenceOfPrinters.hxx>
+#include <Message_Printer.hxx>
 
 #include <iostream>
 
-#include <Message_Printer.hxx>
-
-class CustomPrinter : public Message_Printer {
+class CustomPrinter : public Message_Printer
+{
 public:
     CustomPrinter() {}
-    virtual void Send(const TCollection_ExtendedString& theString,const Message_Gravity,const Standard_Boolean putEndl) const {
+    virtual void Send(const TCollection_ExtendedString& theString,
+                      const Message_Gravity, const Standard_Boolean putEndl) const
+    {
         char buf[theString.LengthOfCString()];
         char* alias = buf;
         theString.ToUTF8CString(alias);
@@ -28,7 +29,8 @@ public:
     }
 };
 
-void setOpenCASCADEPrinters() {
+void setOpenCASCADEPrinters()
+{
     // OSD_Timer writes directly to std::cout. We disable...
     // This does kill all of its users, but this application
     // doesn't have any worth keeping. The "proper" solution
@@ -38,7 +40,7 @@ void setOpenCASCADEPrinters() {
 
     // Update standard OpenCASCADE output method
     const Message_SequenceOfPrinters& p = Message::DefaultMessenger()->Printers();
-    for (int i=1;i<=p.Length();i++) {
+    for (int i = 1; i <= p.Length(); i++) {
         Message::DefaultMessenger()->RemovePrinter(p.Value(i));
     }
     //Message::DefaultMessenger()->AddPrinter(new CustomPrinter());

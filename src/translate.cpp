@@ -1,6 +1,8 @@
 #include "translate.h"
-
 #include "gdmlwriter.h"
+
+#include <QSet>
+#include <QColor>
 
 #include <AIS_Shape.hxx>
 #include <AIS_InteractiveObject.hxx>

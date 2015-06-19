@@ -4,7 +4,14 @@
 #include "gdmlwriter.h"
 #include "util.h"
 #include "helpdialog.h"
-#include <cstdio>
+
+#include <QLabel>
+#include <QMenu>
+#include <QGridLayout>
+#include <QMenuBar>
+#include <QColorDialog>
+#include <QSignalMapper>
+#include <QStandardItemModel>
 
 #include <AIS_InteractiveObject.hxx>
 
@@ -13,6 +20,7 @@
 #include <V3d_AmbientLight.hxx>
 #include <V3d_DirectionalLight.hxx>
 
+#include <cstdio>
 
 QIcon makeIcon(QColor color)
 {

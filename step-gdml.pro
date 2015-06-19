@@ -45,7 +45,15 @@ OBJECTS_DIR = ./build/obj
 MOC_DIR = ./build/moc
 RCC_DIR = ./build/rcc
 
-DEFINES = CSFDB QT_NO_DEPRECATED
+DEFINES = CSFDB
+
+############
+#### QT ####
+############
+
+QT       += core gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+lessThan(QT_MAJOR_VERSION, 5): DEFINES += QT_NO_DEPRECATED
 
 ##################
 #### INCLUDES ####
@@ -75,7 +83,7 @@ LIBS += -lTKCAF -lTKLCAF -lTKXCAF -lTKXDESTEP
 # All OpenCASCADE modules
 #LIBS += -lTKGeomBase -lTKPShape -lTKBool -lTKBO -lTKXSBase -lTKStdLSchema -lTKSTEPAttr -lTKXmlTObj -lTKXSDRAW -lTKSTEP -lTKPrim -lTKAdvTools -lTKFillet -lTKXmlL -lTKTObj -lTKCAF -lTKCDF -lTKViewerTest -lTKService -lTKG2d -lTKG3d -lTKBin -lTKTopAlgo -lTKHLR -lTKXDEIGES -lTKVoxel -lTKDraw -lTKXMesh -lTKXCAFSchema -lTKNIS -lTKPCAF -lTKBinTObj -lTKXmlXCAF -lTKMath -lTKFeat -lTKIGES -lTKSTL -lTKV3d -lTKMesh -lTKVRML -lTKOpenGl -lTKXml -lTKXCAF -lTKBRep -lTKDCAF -lTKTObjDRAW -lTKernel -lTKQADraw -lTKMeshVS -lTKOffset -lTKXDEDRAW -lTKBinXCAF -lTKLCAF -lTKPLCAF -lTKShHealing -lPTKernel -lTKBinL -lTKSTEPBase -lTKShapeSchema -lTKXDESTEP -lTKStdSchema -lFWOSPlugin -lTKSTEP209 -lTKTopTest -lTKGeomAlgo
 
-LIBS += -L/usr/lib -lQtCore -lQtGui
+
 LIBS += -L$$QMAKE_LIBDIR_X11 $$QMAKE_LIBS_X11
 LIBS += -L$$QMAKE_LIBDIR_OPENGL $$QMAKE_LIBS_OPENGL $$QMAKE_LIBS_THREAD
 

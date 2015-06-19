@@ -1,7 +1,7 @@
 #include "util.h"
-#include "QtGui"
 
-QAction* mkAction(QObject* parent, const char* text, const char* shortcut, const char* slot)
+QAction* mkAction(QObject* parent, const char* text, const char* shortcut,
+                  const char* slot)
 {
     QAction* k = new QAction(text, parent);
     k->setShortcut(QKeySequence(shortcut));

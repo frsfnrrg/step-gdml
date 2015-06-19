@@ -1,7 +1,7 @@
 #ifndef VIEWER_H
 #define VIEWER_H
 
-#include <QtGui>
+#include <QRubberBand>
 
 #include <Standard.hxx>
 #include <AIS_InteractiveContext.hxx>

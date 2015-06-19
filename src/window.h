@@ -1,10 +1,16 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include <QtGui>
-#include <QtCore>
-#include <QSettings>
 #include "metadata.h"
+
+#include <QSplitter>
+#include <QListWidget>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QSlider>
+#include <QPushButton>
+#include <QMainWindow>
+#include <QSettings>
 
 class AIS_InteractiveContext;
 class AIS_InteractiveObject;
