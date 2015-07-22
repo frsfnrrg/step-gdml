@@ -46,9 +46,9 @@ public slots:
     void resetView();
 
     void startHover();
-private:
+private slots:
     void init();
-
+private:
     virtual QPaintEngine* paintEngine() const
     {
         return 0;
@@ -72,6 +72,7 @@ private:
     QRubberBand* rubberBand;
     QMouseEvent* lastEvt;
     bool mustResize;
+    bool readyForInteraction;
 };
 
 #endif // VIEWER_H

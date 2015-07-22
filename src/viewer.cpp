@@ -7,6 +7,7 @@
 
 #include <QMouseEvent>
 #include <QResizeEvent>
+#include <QTimer>
 
 #include <Standard_Version.hxx>
 #if OCC_VERSION_HEX >= 0x060503
@@ -40,8 +41,9 @@ Viewer::Viewer(Handle(AIS_InteractiveContext) v, QWidget* parent) :
     this->setMinimumSize(150, 150);
     this->setFocusPolicy(Qt::NoFocus);// or Qt::StrongFocus
     this->setMouseTracking(true);
-    this->setBackgroundRole(QPalette::NoRole);
+    // Render to widget outside of Qt
     this->setAttribute(Qt::WA_PaintOnScreen);
+    // Don't redraw widget background
     this->setAttribute(Qt::WA_NoSystemBackground);
 
     view = Handle(V3d_View)();
@@ -49,6 +51,9 @@ Viewer::Viewer(Handle(AIS_InteractiveContext) v, QWidget* parent) :
     buttonMode = NULL;
     scrollMode = NULL;
     lastEvt = NULL;
+    readyForInteraction = false;
+
+    QTimer::singleShot(50, this, SLOT(init()));
 }
 
 Viewer::~Viewer()
@@ -114,6 +119,12 @@ void Viewer::init()
     view->TriedronDisplay(Aspect_TOTP_LEFT_LOWER, Quantity_NOC_BLACK, 0.1,
                           V3d_WIREFRAME);
     view->MustBeResized();
+
+    readyForInteraction = true;
+    emit readyToUse();
+    rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
+    rubberBand->hide();
+
     mustResize = false;
 }
 
@@ -135,27 +146,28 @@ void Viewer::resetView()
 
 void Viewer::paintEvent(QPaintEvent*)
 {
-    if (view.IsNull()) {
-        init();
-        emit readyToUse();
-        rubberBand = new QRubberBand(QRubberBand::Rectangle, this);
-        rubberBand->hide();
+    if (!readyForInteraction) {
+        return;
+    }
+
+    if (mustResize) {
+        view->MustBeResized();
+        mustResize = false;
     } else {
-        if (mustResize) {
-            view->MustBeResized();
-            mustResize = false;
-        } else {
-            view->Redraw();
-        }
+        view->Redraw();
     }
 }
-void Viewer::resizeEvent(QResizeEvent* e)
+void Viewer::resizeEvent(QResizeEvent*)
 {
     mustResize = true;
 }
 
 void Viewer::mousePressEvent(QMouseEvent* evt)
 {
+    if (!readyForInteraction) {
+        return;
+    }
+
     lastEvt = evt;
     ViewActionData data = getViewActionData(evt);
     if (buttonMode) {
@@ -169,6 +181,10 @@ void Viewer::mousePressEvent(QMouseEvent* evt)
 
 void Viewer::mouseReleaseEvent(QMouseEvent* evt)
 {
+    if (!readyForInteraction) {
+        return;
+    }
+
     lastEvt = evt;
     if (buttonMode) {
         buttonMode->release(getViewActionData(evt));
@@ -180,6 +196,10 @@ void Viewer::mouseReleaseEvent(QMouseEvent* evt)
 }
 void Viewer::mouseMoveEvent(QMouseEvent* evt)
 {
+    if (!readyForInteraction) {
+        return;
+    }
+
     lastEvt = evt;
     if (buttonMode) {
         buttonMode->drag(getViewActionData(evt));
@@ -195,6 +215,10 @@ void Viewer::mouseDoubleClickEvent(QMouseEvent*)
 }
 void Viewer::wheelEvent(QWheelEvent* evt)
 {
+    if (!readyForInteraction) {
+        return;
+    }
+
     scrollMode = getScrollAction(evt->modifiers());
     scrollMode->scroll(&(*view), evt->delta());
 }
@@ -216,6 +240,10 @@ ViewActionData Viewer::getViewActionData(QMouseEvent* evt)
 
 void Viewer::startHover()
 {
+    if (!readyForInteraction) {
+        return;
+    }
+
     if (!lastEvt || !buttonMode) {
         qFatal("Must have a prior click/buttonMode before startHover is called.");
         return;
