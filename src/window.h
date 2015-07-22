@@ -16,7 +16,6 @@ class AIS_InteractiveContext;
 class AIS_InteractiveObject;
 class Viewer;
 class Translator;
-class IODialog;
 class HelpDialog;
 
 class GDMLNameValidator : public QValidator
@@ -68,8 +67,6 @@ private:
     Viewer* view;
     AIS_InteractiveContext* context;
     Translator* translate;
-    IODialog* gdmldialog;
-    IODialog* stepdialog;
     HelpDialog* helpdialog;
 
     GDMLNameValidator* validator;

@@ -12,6 +12,7 @@
 #include <QColorDialog>
 #include <QSignalMapper>
 #include <QStandardItemModel>
+#include <QFileDialog>
 
 #include <AIS_InteractiveObject.hxx>
 
@@ -62,7 +63,7 @@ void GDMLNameValidator::fixup(QString&) const
 }
 
 MainWindow::MainWindow(QString openFile) :
-    QMainWindow(), gdmldialog(NULL), stepdialog(NULL), helpdialog(NULL)
+    QMainWindow(), helpdialog(NULL)
 {
     setWindowTitle("STEP to GDML");
 
@@ -340,22 +341,22 @@ void MainWindow::exportGDML(QString path)
 
 void MainWindow::raiseSTEP()
 {
-    if (!stepdialog) {
-        stepdialog = new IODialog(this, QFileDialog::AcceptOpen,
-                                  QStringList("Step Files (*.stp *.step)"), "stp");
-        stepdialog->hook(this, SLOT(importSTEP(QString)));
+    QString filters = "All Files (*.*);;Step Files (*.stp *.step)";
+    QString name = QFileDialog::getOpenFileName(this, "Import STEP file",
+                   QDir::currentPath(), filters);
+    if (!name.isEmpty()) {
+        importSTEP(name);
     }
-    stepdialog->display();
 }
 
 void MainWindow::raiseGDML()
 {
-    if (!gdmldialog) {
-        gdmldialog = new IODialog(this, QFileDialog::AcceptSave,
-                                  QStringList("GDML Files (*.gdml)"), "gdml");
-        gdmldialog->hook(this, SLOT(exportGDML(QString)));
+    QString filters = "GDML Files (*.gdml);;All Files (*.*)";
+    QString name = QFileDialog::getSaveFileName(this, "Export GDML file",
+                                 QDir::currentPath() + QDir::separator() + "output.gdml", filters);
+    if (!name.isEmpty()) {
+        exportGDML(name);
     }
-    gdmldialog->display();
 }
 
 void MainWindow::raiseHelp()

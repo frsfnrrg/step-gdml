@@ -3,39 +3,20 @@
 
 #include "metadata.h"
 
-#include <QFileDialog>
+#include <QString>
+#include <QVector>
+#include <QPair>
+#include <QColor>
 
 #include <Standard.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
 
-class IODialog : public QObject
-{
-    Q_OBJECT
-public:
-    IODialog(QWidget* parent, QFileDialog::AcceptMode, QStringList filters,
-             QString suffix);
-
-    void hook(QObject* target, const char* slot);
-
-public slots:
-    void display();
-
-signals:
-    void chosen(QString filename);
-private slots:
-    void onComplete();
-private:
-    QFileDialog* fd;
-};
-
-
 class GdmlWriter;
 class Graphic3d_MaterialAspect;
 
-class Translator: public QObject
+class Translator
 {
-    Q_OBJECT
 public:
     Translator(const Handle(AIS_InteractiveContext) context);
     QList<AIS_InteractiveObject*> importSTEP(QString,
@@ -53,7 +34,6 @@ public:
     static QList<AIS_InteractiveObject*> getInteractiveObjects(const Handle(
                 AIS_InteractiveContext)&);
 private:
-
     static GdmlWriter* gdmlWriter;
     const Handle(AIS_InteractiveContext) context;
 };

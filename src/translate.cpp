@@ -25,63 +25,6 @@
 #include <TDF_LabelSequence.hxx>
 #include <TDataStd_Name.hxx>
 
-
-//
-//
-//                      IODIALOG
-//
-//
-
-// Eventually: do lazy-loading of the dialog internally, so users need not
-// define a custom slot just to create this on demand.
-IODialog::IODialog(QWidget* parent, QFileDialog::AcceptMode mode,
-                   QStringList filters, QString suffix) :
-    QObject(parent), fd(new QFileDialog(parent))
-{
-    fd->setDirectory(QDir::current());
-    fd->setAcceptMode(mode);
-    fd->setModal(true);
-    fd->setConfirmOverwrite(true);
-    // setDefaultSuffix(); // based on filter
-    if (mode == QFileDialog::AcceptOpen) {
-        fd->setFileMode(QFileDialog::ExistingFile);
-        fd->setWindowTitle("Import File");
-        filters.prepend("Any files (*)");
-    } else {
-        fd->selectFile(QDir::currentPath() + QDir::separator() + "output." + suffix);
-        fd->setFileMode(QFileDialog::AnyFile);
-        fd->setWindowTitle("Export File");
-        filters.append("Any files (*)");
-    }
-    fd->setNameFilters(filters);
-    fd->setDefaultSuffix(suffix);
-    fd->setNameFilterDetailsVisible(true);
-
-    connect(fd, SIGNAL(accepted()), SLOT(onComplete()));
-}
-
-void IODialog::hook(QObject* target, const char* slot)
-{
-    connect(this, SIGNAL(chosen(QString)), target, slot);
-}
-
-void IODialog::onComplete()
-{
-    QStringList files = fd->selectedFiles();
-    if (files.length() != 1) {
-        return;
-    }
-    QString filename = QDir(files[0]).absolutePath();
-
-    emit chosen(filename);
-}
-
-void IODialog::display()
-{
-    fd->show();
-    fd->raise();
-}
-
 //
 //
 //                      TRANSLATOR
