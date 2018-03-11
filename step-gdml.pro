@@ -9,10 +9,12 @@ CASROOT = $$(CASROOT)
 isEmpty (CASROOT) {
     CASROOT = /opt/OpenCASCADE
 }
-message (CASROOT is $$CASROOT)
+!exists($$CASROOT) {
+    CASROOT = /opt/opencascade
+}
 
-OCCLIB=$$CASROOT/lib
-!exists(OCCLIB) {
+OCCLIB=$$CASROOT/lib/
+!exists($$OCCLIB) {
     OCCLIB=$$CASROOT/lin64/gcc/lib
 }
 message (OCCLIB is $$OCCLIB)
@@ -59,7 +61,7 @@ lessThan(QT_MAJOR_VERSION, 5): DEFINES += QT_NO_DEPRECATED
 #### INCLUDES ####
 ##################
 
-INCLUDEPATH = $$CASROOT $$CASROOT/inc $(QTDIR)/include/QtCore \
+INCLUDEPATH = $$CASROOT $$CASROOT/inc $$CASROOT/include/opencascade $(QTDIR)/include/QtCore \
               $(QTDIR)/include/QtGui $(QTDIR)/include
 INCLUDEPATH += $$QMAKE_INCDIR_X11 $$QMAKE_INCDIR_OPENGL $$QMAKE_INCDIR_THREAD
 DEFINES += LIN LININTEL OCC_CONVERT_SIGNALS HAVE_CONFIG_H HAVE_WOK_CONFIG_H
@@ -69,13 +71,18 @@ DEFINES += LIN LININTEL OCC_CONVERT_SIGNALS HAVE_CONFIG_H HAVE_WOK_CONFIG_H
 ##############
 
 # To place CASROOT before -L/usr/lib in case we override it
-QMAKE_LFLAGS += -L$$OCCLIB
+#QMAKE_CXXFLAGS +=  -fsanitize=address
+#QMAKE_LFLAGS += -fsanitize=address
+QMAKE_LFLAGS +=   -L$$OCCLIB
 
-LIBS += -lTKernel -lPTKernel -lTKMath -lTKService -lTKV3d -lTKOpenGl \
+LIBS +=  -lTKernel -lTKMath -lTKService -lTKV3d -lTKOpenGl \
          -lTKBRep -lTKIGES -lTKSTL -lTKVRML -lTKSTEP -lTKSTEPAttr -lTKSTEP209 \
-         -lTKSTEPBase -lTKShapeSchema -lTKGeomBase -lTKGeomAlgo -lTKG3d -lTKG2d \
-         -lTKXSBase -lTKPShape -lTKShHealing -lTKHLR -lTKTopAlgo -lTKMesh -lTKPrim \
+         -lTKSTEPBase -lTKGeomBase -lTKGeomAlgo -lTKG3d -lTKG2d \
+         -lTKXSBase -lTKShHealing -lTKHLR -lTKTopAlgo -lTKMesh -lTKPrim \
          -lTKCDF -lTKBool -lTKBO -lTKFillet -lTKOffset
+
+# Delta to 7.1.0
+#LIBS +=- lTKernel -lTKShapeSchema -lTKPShape
 
 #Note: -lTKXSDRAW leads to a crash on unload.
 LIBS += -lTKCAF -lTKLCAF -lTKXCAF -lTKXDESTEP

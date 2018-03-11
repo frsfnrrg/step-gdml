@@ -13,3 +13,5 @@ callgrind*
 *.orig
 *.kate-swp
 io
+.directory
+*.stash

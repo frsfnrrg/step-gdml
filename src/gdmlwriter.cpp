@@ -27,6 +27,19 @@ GdmlWriter::GdmlWriter(QString filename)
     bounds = Bnd_Box();
 }
 
+static QByteArray convName(const QString& name) {
+    // Strip unicode & get rid of quotes, brackets.
+    QByteArray b;
+    for (QChar c : name) {
+        if (c <= 127 && c != QChar('"') && c != QChar('[') && c != QChar(']')) {
+            b.push_back(c.toLatin1());
+        } else {
+            b.push_back('?');
+        }
+    }
+    return b;
+}
+
 GdmlWriter::~GdmlWriter()
 {
     fclose(f);
@@ -71,13 +84,18 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
 {
     Handle_StlMesh_Mesh aMesh = new StlMesh_Mesh();
     int index = names.size();
+    // Uniqueness tag
+    name = name + "-" + QString::number(index);
 
+#if OCC_VERSION_HEX >= 0x060900
+    StlTransfer::RetrieveMesh(shape, aMesh);
+#else
     StlTransfer::BuildIncrementalMesh(shape, 1.0,
 #if OCC_VERSION_HEX >= 0x060503
                                       Standard_True,
 #endif
                                       aMesh);
-
+#endif
     typedef struct {
         Standard_Integer V1;
         Standard_Integer V2;
@@ -123,7 +141,7 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
     verts.clear();
 
     _("  <solids>\n");
-    _("    <tessellated name=\"T-%s\">\n", name.toUtf8().data());
+    _("    <tessellated name=\"T-%s\">\n", convName(name).data());
 
     idx = 0;
     int num_tris = 0;
@@ -137,6 +155,7 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
             R1 = triconv[V1 + idx - 1];
             R2 = triconv[V2 + idx - 1];
             R3 = triconv[V3 + idx - 1];
+            // Q: skip degenerates where ex. R1=R2 ?
 
             _("      <triangular vertex1=\"%d-%d\" vertex2=\"%d-%d\" vertex3=\"%d-%d\" type=\"ABSOLUTE\"/>\n",
               index, R1, index, R2, index, R3);
@@ -153,7 +172,7 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
     BRepBndLib::Add(shape, bounds);
 
     printf("% 6d vertices, % 6d triangles <- %s\n", num_verts, num_tris,
-           name.toUtf8().data());
+           convName(name).data());
 }
 
 void GdmlWriter::writeWorldBox()
@@ -193,9 +212,9 @@ void GdmlWriter::writeStructures()
 
     int sz = names.size();
     for (int i = 0; i < sz; i++) {
-        _("    <volume name=\"V-%s\">\n", names[i].toUtf8().data());
+        _("    <volume name=\"V-%s\">\n", convName(names[i]).data());
         _("      <materialref ref=\"%s\"/>\n", materials[i].toUtf8().data());
-        _("      <solidref ref=\"T-%s\"/>\n", names[i].toUtf8().data());
+        _("      <solidref ref=\"T-%s\"/>\n", convName(names[i]).data());
         _("    </volume>\n");
     }
 
@@ -204,8 +223,8 @@ void GdmlWriter::writeStructures()
     _("      <solidref ref=\"worldbox\"/>\n");
 
     for (int i = 0; i < sz; i++) {
-        _("      <physvol name=\"P-%s\">\n", names[i].toUtf8().data());
-        _("        <volumeref ref=\"V-%s\"/>\n", names[i].toUtf8().data());
+        _("      <physvol name=\"P-%s\">\n", convName(names[i]).data());
+        _("        <volumeref ref=\"V-%s\"/>\n", convName(names[i]).data());
         _("        <positionref ref=\"center\"/>\n");
         _("      </physvol>\n");
     }

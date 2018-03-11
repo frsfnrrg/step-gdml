@@ -9,8 +9,7 @@
 #include <QSettings>
 
 #include <V3d_Viewer.hxx>
-#include <Visual3d_ViewMappingDefinitionError.hxx>
-
+#include <V3d_BadValue.hxx>
 
 #define NAME_IMPL(X) virtual QString getName() {return QString(X);}
 #define COLOR_IMPL(X) virtual Qt::GlobalColor getColor() {return X;}
@@ -256,7 +255,7 @@ void doScroll(const Handle(V3d_View)& v, double step)
     double initial = v->Scale();
     try {
         v->SetScale(initial * factor);
-    } catch (Visual3d_ViewMappingDefinitionError& err) {
+    } catch (V3d_BadValue& err) {
         qDebug("Too far. Disregarding");
         v->SetScale(initial);
     }

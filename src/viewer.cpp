@@ -81,12 +81,7 @@ V3d_Viewer* Viewer::makeViewer()
     }
 #endif
 
-    Standard_ExtString name = TCollection_ExtendedString("Visu3D").ToExtString();
-
-    V3d_Viewer* viewer = new V3d_Viewer(graphics, name, "", 1000.0,
-                                        V3d_XposYnegZpos,
-                                        Quantity_NOC_GRAY30, V3d_ZBUFFER, V3d_GOURAUD, V3d_WAIT,
-                                        Standard_True, Standard_True, V3d_TEX_NONE);
+    V3d_Viewer* viewer = new V3d_Viewer(graphics);
 #if !WITH_DRIVER
     viewer->Init();
 #endif

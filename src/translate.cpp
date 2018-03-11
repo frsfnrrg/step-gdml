@@ -212,8 +212,11 @@ int countSubshapes(const TopoDS_Shape& s, TopAbs_ShapeEnum type)
 
 QPair<QString, QColor> handleShapeMetadata(const TopoDS_Shape& shape,
         const Handle(XCAFDoc_ColorTool)& colorTool,
-        const Handle(XCAFDoc_ShapeTool)& shapeTool)
+        const Handle(XCAFDoc_ShapeTool)& shapeTool,
+        const Handle(XCAFDoc_MaterialTool)& materialTool)
 {
+    Q_UNUSED(materialTool);
+
     QColor result = getColor(shape, colorTool);
 
     if (!result.isValid()) {
@@ -303,6 +306,8 @@ bool Translator::importSTEP(QString file,
             mainLabel);
     Handle(XCAFDoc_ColorTool) colorTool = XCAFDoc_DocumentTool::ColorTool(
             mainLabel);
+    Handle(XCAFDoc_MaterialTool) materialTool = XCAFDoc_DocumentTool::MaterialTool(
+            mainLabel);
 
     TDF_LabelSequence labels;
     shapeTool->GetFreeShapes(labels);
@@ -317,13 +322,13 @@ bool Translator::importSTEP(QString file,
         for (TopExp_Explorer exp(tds, TopAbs_SOLID); exp.More(); exp.Next()) {
             TopoDS_Shape solid = exp.Current();
             shapes->Append(solid);
-            objData.append(handleShapeMetadata(solid, colorTool, shapeTool));
+            objData.append(handleShapeMetadata(solid, colorTool, shapeTool, materialTool));
             found = true;
         }
         if (!found) {
             for (TopExp_Explorer exp(tds, TopAbs_SHELL); exp.More(); exp.Next()) {
                 TopoDS_Shape solid = exp.Current();
-                objData.append(handleShapeMetadata(solid, colorTool, shapeTool));
+                objData.append(handleShapeMetadata(solid, colorTool, shapeTool, materialTool));
                 shapes->Append(solid);
                 found = true;
             }
