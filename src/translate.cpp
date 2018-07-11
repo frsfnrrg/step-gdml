@@ -53,7 +53,6 @@ QList<AIS_InteractiveObject*> Translator::displayShapes(const Handle(
         Graphic3d_MaterialAspect mat;
         mat.SetTransparency(0.0);
         mat.SetShininess(0.003);
-        mat.SetEnvReflexion(0.003);
 
         mat.SetAmbient(0.5);
         mat.SetAmbientColor(Quantity_NOC_WHITE);

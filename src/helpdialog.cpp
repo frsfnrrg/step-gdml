@@ -10,10 +10,19 @@
 
 #include <V3d_Viewer.hxx>
 #include <V3d_BadValue.hxx>
+#include <Standard_Version.hxx>
 
 #define NAME_IMPL(X) virtual QString getName() {return QString(X);}
 #define COLOR_IMPL(X) virtual Qt::GlobalColor getColor() {return X;}
 #define CURSOR_IMPL(X) virtual Qt::CursorShape getCursor() {return X;}
+
+#if OCC_VERSION_HEX >= 0x070000
+#define OPTIONAL_UPDATE_ARGUMENT true
+#define AND_OPTIONAL_UPDATE_ARGUMENT ,true
+#else
+#define OPTIONAL_UPDATE_ARGUMENT
+#define AND_OPTIONAL_UPDATE_ARGUMENT
+#endif
 
 OrientationMapper::OrientationMapper(QObject* source, QObject* target,
                                      V3d_TypeOfOrientation o) : QObject(source)
@@ -46,7 +55,7 @@ public:
     COLOR_IMPL(Qt::darkGreen)
     virtual void drag(const ViewActionData& data)
     {
-        data.context->MoveTo(data.x, data.y, data.view);
+        data.context->MoveTo(data.x, data.y, data.view AND_OPTIONAL_UPDATE_ARGUMENT);
     }
 } ClkHover;
 
@@ -82,11 +91,17 @@ public:
         BaseClkRubberBandType::release(data);
         const QRect& r = data.band->geometry();
         if (r.isEmpty()) {
-            data.context->Select();
+
+#if OCC_VERSION_HEX >= 0x070000
+        data.context->Select(true);
+#else
+         data.context->Select(true);
+#endif
+
         } else {
             int x1, y1, x2, y2;
             r.getCoords(&x1, &y1, &x2, &y2);
-            data.context->Select(x1, y1, x2, y2, data.view);
+            data.context->Select(x1, y1, x2, y2, data.view AND_OPTIONAL_UPDATE_ARGUMENT);
         }
     }
 } ClkSelect;
@@ -101,11 +116,11 @@ public:
         BaseClkRubberBandType::release(data);
         const QRect& r = data.band->geometry();
         if (r.isEmpty()) {
-            data.context->ShiftSelect();
+            data.context->ShiftSelect(OPTIONAL_UPDATE_ARGUMENT);
         } else {
             QPoint tl = r.topLeft();
             QPoint br = r.bottomRight();
-            data.context->ShiftSelect(tl.x(), tl.y(), br.x(), br.y(), data.view);
+            data.context->ShiftSelect(tl.x(), tl.y(), br.x(), br.y(), data.view AND_OPTIONAL_UPDATE_ARGUMENT);
         }
     }
 } ClkSelectToggle;

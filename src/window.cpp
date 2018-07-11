@@ -152,8 +152,13 @@ void MainWindow::createInterface()
             SLOT(currentObjectUpdated()));
     QLabel* objTransparencyLabel = new QLabel("Alpha");
 
-    objColor = new QPushButton(makeIcon(Quantity_Color(context->DefaultColor())),
-                               "");
+    Quantity_Color qcol;
+#if OCC_VERSION_HEX >= 0x070000
+    qcol = context->DefaultDrawer()->Color();
+#else
+    qcol = Quantity_Color(context->DefaultDrawer()->Color());
+#endif
+    objColor = new QPushButton(makeIcon(qcol), "");
     connect(objColor, SIGNAL(clicked()), this, SLOT(getColor()));
     QLabel* objColorLabel = new QLabel("Color");
 
@@ -294,7 +299,12 @@ void MainWindow::importSTEP(QString path)
     QList<QPair<QString, QColor> > objectData;
     QList<AIS_InteractiveObject*>  objects = translate->importSTEP(path,
             objectData);
-    qDebug("Success %c", objects.isEmpty() ? 'N' : 'Y');
+    if (objects.isEmpty()) {
+        qDebug("Failure");
+    } else {
+        qDebug("Success");
+        importedName = path;
+    }
     QList<QString> objectNames;
     QList<QColor> objectColors;
     for (int i = 0; i < objectData.length(); i++) {
@@ -302,6 +312,7 @@ void MainWindow::importSTEP(QString path)
         objectColors.append(objectData[i].second);
     }
     objectNames = ensureUniqueness(objectNames);
+
 
     for (int i = 0; i < objects.length(); i++) {
         SolidMetadata sm;
@@ -352,8 +363,9 @@ void MainWindow::raiseSTEP()
 void MainWindow::raiseGDML()
 {
     QString filters = "GDML Files (*.gdml);;All Files (*.*)";
+    QString adv_name = importedName.isEmpty() ? "output.gdml" : importedName.split(QDir::separator()).last();
     QString name = QFileDialog::getSaveFileName(this, "Export GDML file",
-                                 QDir::currentPath() + QDir::separator() + "output.gdml", filters);
+                                 QDir::currentPath() + QDir::separator() + adv_name, filters);
     if (!name.isEmpty()) {
         exportGDML(name);
     }

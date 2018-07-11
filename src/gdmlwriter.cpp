@@ -4,13 +4,9 @@
 #include <QMap>
 
 #include <BRepBndLib.hxx>
-#include <StlTransfer.hxx>
-#include <StlMesh_Mesh.hxx>
-#include <StlMesh_SequenceOfMeshTriangle.hxx>
-#include <StlMesh_MeshTriangle.hxx>
-#include <StlMesh_MeshExplorer.hxx>
+#include <StlAPI_Writer.hxx>
 #include <Standard_Version.hxx>
-
+#include <Poly_CoherentTriangulation.hxx> // Since 0x060300 ?
 
 QString GdmlWriter::defaultMaterial()
 {
@@ -80,89 +76,25 @@ bool operator <(const gp_XYZ& a, const gp_XYZ& b)
     return a.X() < b.X();
 }
 
+Handle_Poly_CoherentTriangulation triangulateShape(TopoDS_Shape shape);
 void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
 {
-    Handle_StlMesh_Mesh aMesh = new StlMesh_Mesh();
-    int index = names.size();
-    // Uniqueness tag
-    name = name + "-" + QString::number(index);
-
-#if OCC_VERSION_HEX >= 0x060900
-    StlTransfer::RetrieveMesh(shape, aMesh);
-#else
-    StlTransfer::BuildIncrementalMesh(shape, 1.0,
-#if OCC_VERSION_HEX >= 0x060503
-                                      Standard_True,
-#endif
-                                      aMesh);
-#endif
-    typedef struct {
-        Standard_Integer V1;
-        Standard_Integer V2;
-        Standard_Integer V3;
-    } Triangle;
-
-    QList<gp_XYZ> verts;
-    QMap<gp_XYZ, int> dedup;
-    QList<int> steps;
-
-    QList<int> triconv;
-
-    int idx = 0;
-    for (int i = 1; i <= aMesh->NbDomains(); i++) {
-        const TColgp_SequenceOfXYZ& seq = aMesh->Vertices(i);
-        for (int j = 1; j <= seq.Length(); j++) {
-            const gp_XYZ& pt = seq.Value(j);
-
-            int val = dedup.value(pt, -1);
-            if (val == -1) {
-                verts.append(pt);
-                triconv.append(idx);
-                dedup[pt] = idx;
-                idx += 1;
-            } else {
-                triconv.append(val);
-            }
-        }
-        steps.append(seq.Length());
-    }
-
-    dedup.clear();
+    Handle_Poly_CoherentTriangulation aMesh = triangulateShape(shape);
 
     _("  <define>\n");
-    int numverts = verts.size();
-    for (int i = 0; i < numverts; i++) {
-        _("    <position name=\"%d-%d\" x=\"%f\" y=\"%f\" z=\"%f\" unit=\"mm\"/>\n",
-          index, i, verts[i].X(), verts[i].Y(), verts[i].Z());
+    for (int i = 0; i < aMesh->NNodes(); i++) {
+        const Poly_CoherentNode& vert = aMesh->Node(i);
+        _("    <position name=\"%d\" x=\"%f\" y=\"%f\" z=\"%f\" unit=\"mm\"/>\n",
+          i, vert.X(), vert.Y(), vert.Z());
     }
     _("  </define>\n");
 
-    int num_verts = verts.size();
-    verts.clear();
-
     _("  <solids>\n");
     _("    <tessellated name=\"T-%s\">\n", convName(name).data());
-
-    idx = 0;
-    int num_tris = 0;
-    for (int i = 1; i <= aMesh->NbDomains(); i++) {
-        const StlMesh_SequenceOfMeshTriangle& x = aMesh->Triangles(i);
-        for (int j = 1; j <= x.Length(); j++) {
-            int V1, V2, V3;
-            x.Value(j)->GetVertex(V1, V2, V3);
-
-            int R1, R2, R3;
-            R1 = triconv[V1 + idx - 1];
-            R2 = triconv[V2 + idx - 1];
-            R3 = triconv[V3 + idx - 1];
-            // Q: skip degenerates where ex. R1=R2 ?
-
-            _("      <triangular vertex1=\"%d-%d\" vertex2=\"%d-%d\" vertex3=\"%d-%d\" type=\"ABSOLUTE\"/>\n",
-              index, R1, index, R2, index, R3);
-
-        }
-        num_tris += x.Length();
-        idx += steps[i - 1];
+    for (int i=0;i<aMesh->NTriangles();i++) {
+        const Poly_CoherentTriangle& tri = aMesh->Triangle(i);
+         _("      <triangular vertex1=\"%d\" vertex2=\"%d\" vertex3=\"%d\" type=\"ABSOLUTE\"/>\n",
+              tri.Node(0), tri.Node(1), tri.Node(2));
     }
     _("    </tessellated>\n");
     _("  </solids>\n");
@@ -171,7 +103,7 @@ void GdmlWriter::addSolid(TopoDS_Shape shape, QString name, QString material)
     materials.append(material);
     BRepBndLib::Add(shape, bounds);
 
-    printf("% 6d vertices, % 6d triangles <- %s\n", num_verts, num_tris,
+    printf("% 6d vertices, % 6d triangles <- %s\n", aMesh->NNodes(), aMesh->NTriangles(),
            convName(name).data());
 }
 

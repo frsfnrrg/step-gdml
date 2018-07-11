@@ -81,6 +81,7 @@ private:
     QMap<QListWidgetItem*, int> itemsToIndices;
     QMap<AIS_InteractiveObject*, int> objectsToIndices;
     QSet<QString> names;
+    QString importedName;
     int current_object;
 };
 

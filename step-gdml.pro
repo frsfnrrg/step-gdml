@@ -12,6 +12,9 @@ isEmpty (CASROOT) {
 !exists($$CASROOT) {
     CASROOT = /opt/opencascade
 }
+!exists($$CASROOT) {
+    CASROOT = /opt/opencascade7
+}
 
 OCCLIB=$$CASROOT/lib/
 !exists($$OCCLIB) {
@@ -38,7 +41,8 @@ SOURCES = src/main.cpp \
     src/translate.cpp \
     src/gdmlwriter.cpp \
     src/helpdialog.cpp \
-    src/viewer.cpp
+    src/viewer.cpp \
+    src/triangulate.cpp
 
 OTHER_FILES=.astylerc
 
